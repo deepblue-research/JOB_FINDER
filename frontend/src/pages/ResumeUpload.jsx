@@ -6,7 +6,8 @@ const ResumeUpload = () => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState(null); // 'uploading', 'parsing', 'scoring'
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [results, setResults] = useState(null);
   const navigate = useNavigate();
 
   const handleFileChange = (e) => {
@@ -19,6 +20,7 @@ const ResumeUpload = () => {
       }
       setFile(selectedFile);
       setError(null);
+      setResults(null);
     }
   };
 
@@ -37,16 +39,12 @@ const ResumeUpload = () => {
     formData.append('file', file);
 
     try {
-      // The backend processes everything in one go: extract, parse, score, embed
       setUploadStatus('processing');
       const response = await client.post('/api/resumes/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      console.log('Upload success:', response.data);
-      navigate('/jobs');
+      setResults(response.data);
     } catch (err) {
       console.error('Upload error:', err);
       setError(err.response?.data?.detail || 'Failed to upload resume. Please try again.');
@@ -55,6 +53,71 @@ const ResumeUpload = () => {
       setUploadStatus(null);
     }
   };
+
+  if (results) {
+    const { ats_score, ats_tips, parsed_data } = results;
+    const isGoodScore = ats_score >= 40;
+
+    return (
+      <div className="max-w-2xl mx-auto mt-20 bg-white rounded-xl border shadow-sm p-8">
+        <div className="text-center mb-8">
+          <div className={`inline-flex items-center justify-center h-20 w-20 rounded-full mb-4 ${isGoodScore ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+            <span className="text-2xl font-bold">{Math.round(ats_score)}</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isGoodScore ? 'Resume Analysis Complete' : 'Action Required: Improve Your Resume'}
+          </h1>
+          <p className="text-gray-500 mt-2">
+            Your ATS Compatibility Score: {Math.round(ats_score)}/100
+          </p>
+        </div>
+
+        {!isGoodScore && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <h3 className="text-red-800 font-bold mb-3 flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Issues to Fix
+            </h3>
+            <ul className="list-disc list-inside text-red-700 space-y-2 text-sm">
+              {ats_tips.map((tip, i) => (
+                <li key={i}>{tip}</li>
+              ))}
+            </ul>
+            <button 
+              onClick={() => { setResults(null); setFile(null); }}
+              className="mt-6 w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+            >
+              Re-upload Improved Resume
+            </button>
+          </div>
+        )}
+
+        {isGoodScore && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-gray-900 font-bold mb-3">Extracted Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {parsed_data.skills?.map((skill, i) => (
+                  <span key={i} className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => navigate('/jobs')}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-bold"
+            >
+              Find Matching Jobs →
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto mt-20 bg-white rounded-xl border shadow-sm p-8">

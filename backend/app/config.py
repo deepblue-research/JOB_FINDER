@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # External APIs
-    ANTHROPIC_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     JSEARCH_API_KEY: str = ""
     JSEARCH_API_HOST: str = "jsearch.p.rapidapi.com"
 
