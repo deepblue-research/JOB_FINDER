@@ -8,7 +8,6 @@ from app.database import get_db
 from app.models.resume import Resume
 from app.services.resume_parser import resume_parser
 from app.services.ats_scorer import ats_scorer
-from app.services.embedder import embedder
 from app.api.auth import oauth2_scheme
 from app.utils.auth_utils import verify_token
 
@@ -20,7 +19,7 @@ async def upload_resume(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ):
-    """Processes an uploaded resume: Extracts text, parses JSON, scores ATS, and embeds."""
+    """Processes an uploaded resume: Extracts text, parses JSON, and scores ATS."""
     user_id_str = verify_token(token)
     user_id = UUID(user_id_str)
     
@@ -37,8 +36,8 @@ async def upload_resume(
     # 3. Score for ATS
     ats_result = await ats_scorer.calculate_score(raw_text)
 
-    # 4. Generate Embedding
-    embedding = embedder.get_embedding(raw_text)
+    # 4. Extract Skills/Keywords (Placeholder for now)
+    skills_keywords = {"skills": parsed_json.get("skills", [])}
 
     # 5. Save to Database
     result = await db.execute(select(Resume).where(Resume.user_id == user_id))
@@ -48,7 +47,7 @@ async def upload_resume(
         resume_entry.raw_text = raw_text
         resume_entry.parsed_json = parsed_json
         resume_entry.ats_score = ats_result.get("total_score")
-        resume_entry.embedding = embedding
+        resume_entry.skills_keywords = skills_keywords
         resume_entry.created_at = datetime.utcnow()
     else:
         resume_entry = Resume(
@@ -56,7 +55,7 @@ async def upload_resume(
             raw_text=raw_text,
             parsed_json=parsed_json,
             ats_score=ats_result.get("total_score"),
-            embedding=embedding
+            skills_keywords=skills_keywords
         )
         db.add(resume_entry)
 

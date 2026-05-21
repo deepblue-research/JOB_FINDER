@@ -1,19 +1,17 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import HTTPException, status
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def hash_password(plain: str) -> str:
-    """Hashes a password using bcrypt."""
-    return pwd_context.hash(plain)
+    """Hashes a password using bcrypt, truncating to 72 bytes."""
+    return bcrypt.hashpw(plain[:72].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Verifies a plain password against a hash."""
-    return pwd_context.verify(plain, hashed)
+    """Verifies a plain password against a hash, truncating to 72 bytes."""
+    return bcrypt.checkpw(plain[:72].encode('utf-8'), hashed.encode('utf-8'))
 
 def create_access_token(user_id: str) -> str:
     """Creates a JWT token with a 7-day expiry (HS256)."""

@@ -39,7 +39,7 @@ async def get_recommendations(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ):
-    """Fetch jobs and rank them based on the user's resume embedding."""
+    """Fetch jobs and rank them based on the user's resume."""
     user_id_str = verify_token(token)
     user_id = UUID(user_id_str)
 
@@ -54,8 +54,8 @@ async def get_recommendations(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    if not user.resume or not user.resume.embedding:
-        raise HTTPException(status_code=400, detail="Resume embedding not found. Please upload a resume first.")
+    if not user.resume:
+        raise HTTPException(status_code=400, detail="Resume not found. Please upload a resume first.")
 
     # 2. Get preferred search query
     pref = user.preferences
@@ -65,7 +65,7 @@ async def get_recommendations(
     jobs = await jsearch_client.search_jobs(db, query=search_query)
     
     # 4. Rank them
-    ranked_jobs = await job_ranker.rank_jobs(user.resume.embedding, jobs)
+    ranked_jobs = await job_ranker.rank_jobs(user.resume.skills_keywords, jobs)
     
     return {"jobs": ranked_jobs}
 
