@@ -1,174 +1,338 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import client from '../api/client';
+import useJobStore from '../store/jobStore';
+import { useToastStore } from '../store/toastStore';
 
 const JobDetail = () => {
-  const { job_id } = useParams();
+  const cleanLocation = (loc) => {
+    if (!loc) return 'India'
+    return loc
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => 
+            p && 
+            p !== 'undefined' && 
+            p !== 'null' && 
+            p !== 'None' && 
+            p !== 'N/A' &&
+            p !== 'undefined'
+        )
+        .join(', ') || 'India'
+  }
+
+  const params = useParams();
+  const jobHash = params.job_hash || params.job_id;
+  
+  const skillGaps = useJobStore((state) => state.skillGaps);
+  const setSkillGap = useJobStore((state) => state.setSkillGap);
+  const showToast = useToastStore((state) => state.showToast);
+
   const [job, setJob] = useState(null);
-  const [skillGap, setSkillGap] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [error, setError] = useState(null);
+  const [jobLoading, setJobLoading] = useState(true);
+  const [jobError, setJobError] = useState(null);
+
+  const [analysisState, setAnalysisState] = useState('initial'); // 'initial', 'loading', 'result', 'error'
+  const [analysisResult, setAnalysisResult] = useState(null);
+  
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
+  const loadingTexts = [
+    "Reading your resume...",
+    "Analysing job requirements...",
+    "Finding your skill gaps...",
+    "Generating course recommendations..."
+  ];
+
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
 
   useEffect(() => {
-    const fetchJobDetails = async () => {
+    const fetchJob = async () => {
       try {
-        setIsLoading(true);
-        const response = await client.get(`/api/jobs/details/${job_id}`);
-        setJob(response.data);
-        
-        // Trigger skill gap analysis once job details are fetched
-        analyzeSkillGap(response.data);
+        setJobLoading(true);
+        const res = await client.get(`/api/jobs/details/${jobHash}`);
+        setJob(res.data);
       } catch (err) {
-        console.error('Error fetching job details:', err);
-        setError('Failed to load job details.');
+        setJobError("Couldn't load job details.");
+        showToast("Failed to load job details.", "error");
       } finally {
-        setIsLoading(false);
+        setJobLoading(false);
       }
     };
+    if (jobHash) {
+      fetchJob();
+    }
+  }, [jobHash, showToast]);
 
-    fetchJobDetails();
-  }, [job_id]);
+  useEffect(() => {
+    if (jobHash && skillGaps[jobHash]) {
+      setAnalysisState('result');
+      setAnalysisResult(skillGaps[jobHash]);
+    }
+  }, [jobHash, skillGaps]);
 
-  const analyzeSkillGap = async (jobData) => {
+  useEffect(() => {
+    let interval;
+    if (analysisState === 'loading') {
+      interval = setInterval(() => {
+        setLoadingTextIndex((prev) => (prev + 1) % loadingTexts.length);
+      }, 2000);
+    }
+    return () => clearInterval(interval);
+  }, [analysisState, loadingTexts.length]);
+
+  const handleAnalyse = async () => {
+    if (!job) return;
     try {
-      setIsAnalyzing(true);
-      const response = await client.post('/api/skill-gap/analyze', {
-        job_id: jobData.job_id,
-        job_description: jobData.job_description
+      setAnalysisState('loading');
+      setLoadingTextIndex(0);
+      const res = await client.post('/api/skill-gap/analyze', {
+        job_hash: jobHash,
+        job_description: job?.job_description || job?.description || ''
       });
-      setSkillGap(response.data);
+      setAnalysisResult(res.data);
+      setSkillGap(jobHash, res.data);
+      setAnalysisState('result');
     } catch (err) {
-      console.error('Skill gap analysis failed:', err);
-    } finally {
-      setIsAnalyzing(false);
+      console.error('Analysis error:', err);
+      setAnalysisState('error');
+      showToast("Error generating skill gap analysis.", "error");
     }
   };
 
-  if (isLoading) {
+  const handleFeedback = async (rating) => {
+    try {
+      await client.post('/api/feedback', null, {
+        params: { job_id: jobHash, rating }
+      });
+      setFeedbackGiven(true);
+      setTimeout(() => setFeedbackGiven(false), 3000);
+    } catch (err) {
+      console.error('Feedback failed', err);
+      showToast("Error submitting feedback.", "error");
+    }
+  };
+
+  if (jobLoading) {
     return (
-      <div className="max-w-4xl mx-auto mt-20 text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <p className="text-gray-600 font-medium">Loading job details...</p>
       </div>
     );
   }
 
-  if (error || !job) {
+  if (jobError) {
     return (
-      <div className="max-w-xl mx-auto mt-20 text-center">
-        <h2 className="text-xl font-bold text-gray-900">{error || 'Job not found'}</h2>
-        <Link to="/jobs" className="text-blue-600 hover:underline mt-4 block">Back to Jobs</Link>
+      <div className="max-w-xl mx-auto px-4 md:px-8 py-12 text-center">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
+          <p className="text-gray-600 mb-6">{jobError}</p>
+          <Link to="/jobs" className="bg-blue-600 text-white px-6 py-2 min-h-[44px] flex items-center justify-center rounded-lg font-medium hover:bg-blue-700">
+            Back to Jobs
+          </Link>
+        </div>
       </div>
     );
   }
+
+  if (!job) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <Link to="/jobs" className="text-sm font-medium text-gray-500 hover:text-gray-700 mb-8 inline-block">
-        ← Back to Recommended Jobs
-      </Link>
-
-      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-        <div className="p-8 border-b bg-gray-50">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="h-16 w-16 bg-white rounded-lg border flex items-center justify-center overflow-hidden">
-                {job.employer_logo ? (
-                  <img src={job.employer_logo} alt={job.employer_name} className="h-full w-full object-contain" />
-                ) : (
-                  <span className="text-2xl font-bold text-gray-400">{job.employer_name?.[0]}</span>
-                )}
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{job.job_title}</h1>
-                <p className="text-lg text-gray-600 font-medium">{job.employer_name}</p>
-              </div>
-            </div>
-            <a 
-              href={job.job_apply_link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors"
-            >
-              Apply on Company Site
-            </a>
+    <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
+      <div className="flex flex-col md:flex-row md:gap-6">
+        
+        {/* LEFT COLUMN */}
+        <div className="md:w-3/5">
+          <Link to="/jobs" className="text-blue-600 hover:text-blue-500 font-medium mb-4 inline-flex items-center min-h-[44px]">
+            &larr; Back to Jobs
+          </Link>
+          <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-1">
+            {job.employer_name || job.company}
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{job.job_title}</h1>
+          
+          <div className="flex flex-wrap gap-2 mb-6">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              📍 {cleanLocation([job.job_city, job.job_state, job.job_country].filter(Boolean).join(', '))}
+            </span>
+            {job.job_employment_type && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                {job.job_employment_type}
+              </span>
+            )}
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-500">
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-700 mr-2">Location:</span>
-              {job.job_city ? `${job.job_city}, ${job.job_country}` : 'Remote'}
-            </div>
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-700 mr-2">Type:</span>
-              {job.job_employment_type}
-            </div>
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-700 mr-2">Posted:</span>
-              {new Date(job.job_posted_at_datetime_utc).toLocaleDateString()}
-            </div>
-          </div>
+          <a 
+            href={job.job_apply_link || '#'} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`inline-flex items-center justify-center px-6 py-3 min-h-[44px] rounded-lg font-medium transition-colors mb-8 ${job.job_apply_link ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'}`}
+          >
+            Apply Now &rarr;
+          </a>
+
+          <div 
+            className="text-gray-700 leading-relaxed max-h-96 overflow-y-auto"
+            dangerouslySetInnerHTML={{ __html: job?.job_description || job?.description || '' }}
+          />
         </div>
 
-        <div className="p-8 grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
-            <div className="prose prose-blue max-w-none text-gray-700 whitespace-pre-line">
-              {job.job_description}
-            </div>
-          </div>
+        {/* RIGHT COLUMN */}
+        <div className="md:w-2/5 mt-8 md:mt-0 sticky top-4 self-start">
+          <div className="bg-white border rounded-xl shadow-sm p-6 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            
+            {analysisState === 'initial' && (
+              <div className="text-center py-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Skill Gap Analysis</h2>
+                <p className="text-gray-600 mb-6 text-sm">Find out exactly what skills you're missing for this role and get personalized course recommendations to bridge the gap.</p>
+                <button 
+                  onClick={handleAnalyse}
+                  className="bg-blue-600 text-white px-6 py-3 min-h-[44px] rounded-lg font-medium hover:bg-blue-700 transition-colors w-full flex items-center justify-center"
+                >
+                  Analyse My Gaps
+                </button>
+              </div>
+            )}
 
-          <div>
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-100 sticky top-8">
-              <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center">
-                <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                </svg>
-                AI Insights
-              </h3>
-              
-              {isAnalyzing ? (
-                <div className="flex items-center space-x-2 text-blue-700 text-sm">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-700 border-t-transparent"></div>
-                  <span>Analyzing skill gaps...</span>
-                </div>
-              ) : skill_gap ? (
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">Matching Skills</h4>
+            {analysisState === 'loading' && (
+              <div className="text-center py-10">
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                <p className="text-gray-600 font-medium animate-pulse">{loadingTexts[loadingTextIndex]}</p>
+              </div>
+            )}
+
+            {analysisState === 'error' && (
+              <div className="text-center py-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Couldn't analyse</h2>
+                <p className="text-gray-600 mb-6 text-sm">There was an error generating the skill gap analysis.</p>
+                <button 
+                  onClick={handleAnalyse}
+                  className="bg-red-600 text-white px-6 py-2 min-h-[44px] rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center w-full"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {analysisState === 'result' && analysisResult && (
+              <div>
+                {/* Score Banner */}
+                {(() => {
+                  const score = analysisResult.fit_score || 0;
+                  let colorClass = 'text-red-500';
+                  let bannerClass = 'bg-red-50 border-red-200 text-red-700';
+                  let bannerText = 'Skill gap';
+                  
+                  if (score > 70) {
+                    colorClass = 'text-green-500';
+                    bannerClass = 'bg-green-50 border-green-200 text-green-700';
+                    bannerText = 'Strong match';
+                  } else if (score >= 40) {
+                    colorClass = 'text-amber-500';
+                    bannerClass = 'bg-amber-50 border-amber-200 text-amber-700';
+                    bannerText = 'Good potential';
+                  }
+
+                  return (
+                    <div className="text-center mb-6">
+                      <div className="mb-2">
+                        <span className={`text-5xl font-black ${colorClass}`}>{score}%</span>
+                        <span className="text-gray-500 ml-2 font-medium">Fit</span>
+                      </div>
+                      <div className={`inline-block px-4 py-1 rounded-full border text-sm font-semibold ${bannerClass}`}>
+                        {bannerText}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* You already have */}
+                {analysisResult.present_skills && analysisResult.present_skills.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">✅ You already have</h3>
                     <div className="flex flex-wrap gap-2">
-                      {skill_gap.matching_skills?.map((skill, i) => (
-                        <span key={i} className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-md">
+                      {analysisResult.present_skills.map((skill, idx) => (
+                        <span key={idx} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                           {skill}
                         </span>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  <div>
-                    <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-2">Missing Skills</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {skill_gap.missing_skills?.map((skill, i) => (
-                        <span key={i} className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-md">
-                          {skill}
-                        </span>
+                {/* You are missing */}
+                {analysisResult.missing_skills && analysisResult.missing_skills.length > 0 ? (
+                  <div className="mb-6">
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">❌ You are missing</h3>
+                    <div className="space-y-4">
+                      {analysisResult.missing_skills.map((gap, idx) => (
+                        <div key={idx} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-bold text-gray-900">{gap.skill}</span>
+                            {gap.importance && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium">
+                                {gap.importance}
+                              </span>
+                            )}
+                          </div>
+                          {gap.why_needed && (
+                            <p className="text-sm text-gray-600 italic mb-3">{gap.why_needed}</p>
+                          )}
+                          {gap.course_recommendations && gap.course_recommendations.length > 0 ? (
+                            <div className="space-y-2 mt-2">
+                              {gap.course_recommendations.map((course, cIdx) => (
+                                <a 
+                                  key={cIdx} 
+                                  href={course.url || `https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block bg-white border border-blue-100 p-2 min-h-[44px] rounded hover:border-blue-300 transition-colors"
+                                >
+                                  <div className="text-xs text-gray-500 font-medium">{course.platform || 'Course'}</div>
+                                  <div className="text-sm text-blue-600 font-semibold">{course.title || 'Recommended Course'}</div>
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="mt-2">
+                              <a 
+                                href={`https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block bg-white border border-blue-100 p-2 min-h-[44px] rounded hover:border-blue-300 transition-colors"
+                              >
+                                <div className="text-xs text-gray-500 font-medium">Coursera</div>
+                                <div className="text-sm text-blue-600 font-semibold">Search for courses on {gap.skill}</div>
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">Upskilling Plan</h4>
-                    <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-                      {skill_gap.recommendations?.map((rec, i) => (
-                        <li key={i}>{rec}</li>
-                      ))}
-                    </ul>
+                ) : (
+                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <span className="text-2xl mb-2 block">🎉</span>
+                    <h3 className="font-bold text-green-800">You meet all requirements!</h3>
+                    <p className="text-green-600 text-sm mt-1">Your resume is a perfect match for this role.</p>
                   </div>
+                )}
+
+                {/* Feedback */}
+                <div className="mt-8 border-t pt-4 text-center">
+                  <p className="text-sm text-gray-600 font-medium mb-3">Was this helpful?</p>
+                  <div className="flex justify-center gap-4">
+                    <button onClick={() => handleFeedback(1)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">👎</button>
+                    <button onClick={() => handleFeedback(3)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">😐</button>
+                    <button onClick={() => handleFeedback(5)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">👍</button>
+                  </div>
+                  {feedbackGiven && (
+                    <p className="text-green-600 text-sm font-medium mt-2 animate-pulse">Thanks for your feedback!</p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-blue-700">Analysis not available.</p>
-              )}
-            </div>
+
+              </div>
+            )}
           </div>
         </div>
       </div>

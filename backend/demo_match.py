@@ -43,8 +43,12 @@ def get_resume_skills(conn, email="demo@student.com"):
     cur.close()
     if not row or not row[0]:
         return []
-    # skills_keywords is JSONB -> psycopg2 returns it as a Python list already
-    skills = row[0]
+    # skills_keywords is JSONB -> psycopg2 returns it as a Python object
+    data = row[0]
+    if isinstance(data, dict):
+        skills = data.get("skills", [])
+    else:
+        skills = data
     return [str(s).strip().lower() for s in skills if str(s).strip()]
 
 

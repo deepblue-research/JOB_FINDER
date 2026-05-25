@@ -6,12 +6,25 @@ class SkillGapEngine:
     async def analyze_gap(self, resume_json: Dict[str, Any], job_description: str) -> Dict[str, Any]:
         """Analyzes the gap between a candidate's skills and a job's requirements."""
         
+        # First, extract required skills to check if we can actually perform the analysis
+        required_skills = await llm_client.extract_required_skills(job_description)
+        if not required_skills:
+            return {
+                "fit_score": 0,
+                "present_skills": [],
+                "missing_skills": [],
+                "recommendations": [],
+                "error": "Could not extract required skills from this job description"
+            }
+
         system_prompt = (
             "You are a career advisor and technical recruiter. Compare the candidate's skills "
             "and experience (provided in JSON) against the job description. "
             "Identify: 1. Matching Skills, 2. Missing Skills (Critical), 3. Missing Skills (Optional/Nice-to-have), "
             "and 4. A list of 3-5 specific learning resources or project ideas to bridge the gap. "
-            "Return the analysis ONLY as a JSON object."
+            "Return the analysis ONLY as a JSON object. "
+            "If no skills are found in the resume that match the job, show 0% fit. "
+            "NEVER show 100% fit or 'meet all requirements' if the required skills list is empty or undefined."
         )
         
         user_prompt = f"Candidate Resume JSON:\n{json.dumps(resume_json)}\n\nJob Description:\n{job_description}"

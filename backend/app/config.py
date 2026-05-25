@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     JSEARCH_API_KEY: str = ""
     JSEARCH_API_HOST: str = "jsearch.p.rapidapi.com"
+    ADZUNA_APP_ID: str = ""
+    ADZUNA_APP_KEY: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
