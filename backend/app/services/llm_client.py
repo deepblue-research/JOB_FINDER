@@ -6,7 +6,7 @@ from app.config import settings
 class LLMClient:
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
     async def get_completion(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000, json_mode: bool = False) -> str:
         """Sends a prompt to Gemini and returns the response text."""
@@ -61,10 +61,34 @@ class LLMClient:
 
     async def extract_required_skills(self, job_description: str) -> List[str]:
         """Extracts key required skills from a job description."""
+        print(f"DEBUG: Extracting skills from description length: {len(job_description)}")
         system_prompt = "Extract a list of technical skills and requirements from this job description. Return ONLY a JSON list of strings."
         user_prompt = f"Job Description:\n{job_description}"
         response = await self.get_completion(system_prompt, user_prompt, max_tokens=500, json_mode=True)
-        return json.loads(response)
+        
+        print(f"DEBUG: Raw LLM response for skills: {response}")
+        
+        try:
+            skills = json.loads(response)
+            if not skills or not isinstance(skills, list):
+                return self._fallback_skill_extraction(job_description)
+            return skills
+        except Exception as e:
+            print(f"DEBUG: JSON parse error in extract_required_skills: {e}")
+            return self._fallback_skill_extraction(job_description)
+
+    def _fallback_skill_extraction(self, text: str) -> List[str]:
+        """Fallback to extract known skills using regex if LLM fails."""
+        known_skills = [
+            "python", "javascript", "typescript", "java", "react", "angular", "vue", 
+            "node", "express", "fastapi", "flask", "django", "postgresql", "mongodb", 
+            "sql", "nosql", "aws", "azure", "gcp", "docker", "kubernetes", "git", 
+            "machine learning", "data science", "nlp", "ai", "css", "html", "rest api"
+        ]
+        text_lower = text.lower()
+        found = [skill for skill in known_skills if skill in text_lower]
+        print(f"DEBUG: Fallback extraction found: {found}")
+        return found
 
     async def generate_skill_gap(self, user_skills: List[str], required_skills: List[str], missing_skills: List[str]) -> Dict[str, Any]:
         """Generates a detailed skill gap analysis and recommendations."""

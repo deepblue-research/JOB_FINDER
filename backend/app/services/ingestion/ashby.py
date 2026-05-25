@@ -1,5 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
+import hashlib
+from app.utils.job_utils import clean_location
 
 BASE = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
 
@@ -22,12 +24,15 @@ def fetch_jobs(slug: str) -> list[dict]:
 
     jobs = []
     for j in data.get("jobs", []):
+        apply_url = j.get("jobUrl") or j.get("applyUrl", "")
+        job_id = f"ash_{hashlib.md5(apply_url.encode()).hexdigest()[:12]}"
         jobs.append({
+            "job_id": job_id,
             "title": j.get("title", ""),
             "company": slug,
-            "location": j.get("location", ""),
+            "location": clean_location([j.get("location", "")]),
             "description": j.get("descriptionPlain") or _strip_html(j.get("descriptionHtml", "")),
-            "apply_url": j.get("jobUrl") or j.get("applyUrl", ""),
+            "apply_url": apply_url,
             "posted_at": j.get("publishedAt", ""),
             "source": "ashby",
         })

@@ -1,5 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
+import hashlib
+from app.utils.job_utils import clean_location
 
 BASE = "https://api.lever.co/v0/postings/{slug}?mode=json"
 
@@ -23,12 +25,15 @@ def fetch_jobs(slug: str) -> list[dict]:
     jobs = []
     for j in data:  # Lever returns a top-level list, not a dict
         cats = j.get("categories") or {}
+        apply_url = j.get("hostedUrl", "")
+        job_id = f"lev_{hashlib.md5(apply_url.encode()).hexdigest()[:12]}"
         jobs.append({
+            "job_id": job_id,
             "title": j.get("text", ""),
             "company": slug,
-            "location": cats.get("location", ""),
+            "location": clean_location([cats.get("location", "")]),
             "description": j.get("descriptionPlain") or _strip_html(j.get("description", "")),
-            "apply_url": j.get("hostedUrl", ""),
+            "apply_url": apply_url,
             "posted_at": j.get("createdAt", ""),  # epoch milliseconds
             "source": "lever",
         })
