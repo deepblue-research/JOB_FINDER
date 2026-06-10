@@ -146,7 +146,7 @@ const JobDetail = () => {
           <Link to="/jobs" className="text-blue-600 hover:text-blue-500 font-medium mb-4 inline-flex items-center min-h-[44px]">
             &larr; Back to Jobs
           </Link>
-          <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-1">
+          <div className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">
             {job.employer_name || job.company}
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">{job.job_title}</h1>
