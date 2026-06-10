@@ -19,3 +19,7 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project specific
+backend/uploads/
+backend/alembic/versions/__pycache__/

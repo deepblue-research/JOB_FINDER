@@ -165,7 +165,7 @@ const JobResults = () => {
             return (
               <div key={job.job_hash || job.job_id} className="rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col bg-white">
                 <div className="flex justify-between items-start mb-2">
-                  <p className="text-sm font-bold text-gray-800">{job.company || job.employer_name}</p>
+                  <p className="text-sm font-bold text-gray-900">{job.company || job.employer_name}</p>
                 </div>
                 
                 <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2 line-clamp-2">{job.job_title}</h3>
