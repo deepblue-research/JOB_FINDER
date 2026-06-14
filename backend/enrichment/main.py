@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from routes import questions, sessions, generate, improve, optimize
+from routes import questions, sessions, generate, improve, optimize, ats
 
 load_dotenv()
 
@@ -21,6 +21,7 @@ app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(generate.router, prefix="/generate", tags=["generate"])
 app.include_router(improve.router, prefix="/improve", tags=["improve"])
 app.include_router(optimize.router, prefix="/optimize", tags=["optimize"])
+app.include_router(ats.router, prefix="/ats-score", tags=["ats"])
 
 
 @app.get("/health")
