@@ -14,7 +14,12 @@ async def score_resume(file_path: str) -> Dict[str, Any]:
     tech_score = 0
     issues = []
 
-    sections = {'education': 5, 'experience': 10, 'skills': 5, 'projects': 5}
+    sections = {'education': 5, 'skills': 5, 'projects': 5}
+    experience_keywords = ['experience', 'internship', 'work']
+    if any(keyword in text_lower for keyword in experience_keywords):
+        tech_score += 10
+    else:
+        issues.append("Missing 'Experience' section")
     for section, weight in sections.items():
         if section in text_lower:
             tech_score += weight
@@ -33,7 +38,7 @@ async def score_resume(file_path: str) -> Dict[str, Any]:
 
     # 2. LLM QUALITATIVE ANALYSIS (60 points)
     api_key = os.getenv("GEMINI_API_KEY")
-    base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
 
     system_prompt = (
         "You are a sophisticated ATS simulation engine. "
