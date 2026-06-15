@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     JSEARCH_API_HOST: str = "jsearch.p.rapidapi.com"
     ADZUNA_APP_ID: str = ""
     ADZUNA_APP_KEY: str = ""
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -9,7 +9,10 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres
 
 # We use asyncpg for FastAPI but psycopg2 (binary) for Alembic/Sync tasks if needed
 # However, SQLAlchemy 2.0 works well with async.
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=os.getenv("SQL_ECHO", "false").lower() == "true"
+)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
