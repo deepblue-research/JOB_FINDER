@@ -73,6 +73,10 @@ jobs:
 
             echo "=== Step 1: Pull latest code ==="
             cd ~/JOB_FINDER
+            if [ ! -d .git ]; then
+              echo "Cloning repository for the first time..."
+              git clone https://github.com/deepblue-research/JOB_FINDER.git .
+            fi
             git fetch origin deployment
             git reset --hard origin/deployment
 
