@@ -8,7 +8,7 @@ name: Deploy JobMatch
 
 on:
   push:
-    branches: [main]
+    branches: [deployment]
   # This adds a "Run workflow" button in GitHub UI
   workflow_dispatch:
 
@@ -74,8 +74,8 @@ jobs:
 
             echo "=== Step 1: Pull latest code ==="
             cd ~/JOB_FINDER
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin deployment
+            git reset --hard origin/deployment
 
             echo "=== Step 2: Write .env file ==="
             cat > .env << 'EOF'
