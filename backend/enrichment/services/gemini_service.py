@@ -4,7 +4,7 @@ import json
 
 def get_model():
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    return genai.GenerativeModel("gemini-2.0-flash-lite")
+    return genai.GenerativeModel("gemini-2.5-flash-lite")
 
 def generate_resume(answers: dict) -> dict:
     model = get_model()
@@ -119,4 +119,99 @@ Return ONLY valid JSON. No explanation, no extra text, no markdown formatting.
         if text.startswith("json"):
             text = text[4:]
     
+    return json.loads(text)
+
+
+def generate_l3_round1(resume_text: str, jd_text: str) -> dict:
+    model = get_model()
+
+    prompt = f"""
+You are a resume optimization assistant for engineering students in India.
+
+Here is the candidate's current resume (extracted text):
+{resume_text}
+
+Here is the job description they are targeting:
+{jd_text}
+
+Do three things:
+
+1. Rewrite the resume content to better match the keywords, tools, and requirements in the job
+   description. Only change wording, phrasing, and emphasis — do NOT add skills, projects,
+   experience, or qualifications the candidate does not already have.
+   Structure the rewritten resume as JSON with these sections (skip any section with no data):
+   contact_info, education, skills, projects, research, internships, work_experience,
+   certifications, achievements, extracurriculars, volunteering, languages, interests.
+   For each project and experience entry, write 2-3 bullet points starting with action verbs.
+
+2. Look at the candidate's projects and experience. Find anything relevant to this job but
+   thin on detail. Write 3-6 specific follow-up questions to gather more information.
+   Each question needs: id (e.g. "l3_q1"), question_text, input_type ("text" or "textarea"),
+   and why (one sentence explaining why this helps match the job).
+
+3. List skills the job requires that the candidate's resume does not currently show.
+   For each, include the skill name and 2-3 free online course or resource links.
+   Also give a jd_match_score from 0-100 estimating how well the rewritten resume matches
+   this job description.
+
+Return ONLY valid JSON in this exact shape, no markdown, no explanation:
+{{
+  "rewritten_resume": {{ }},
+  "followup_questions": [
+    {{"id": "l3_q1", "question_text": "...", "input_type": "text", "why": "..."}}
+  ],
+  "skill_gaps": [
+    {{"skill": "...", "resources": ["...", "..."]}}
+  ],
+  "jd_match_score": 0
+}}
+"""
+
+    response = model.generate_content(prompt)
+    text = response.text.strip()
+
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+
+    return json.loads(text)
+
+
+def generate_l3_round2(rewritten_resume: dict, followup_answers: dict, jd_text: str) -> dict:
+    model = get_model()
+
+    prompt = f"""
+You are a resume optimization assistant for engineering students in India.
+
+Here is the rewritten resume from Round 1:
+{json.dumps(rewritten_resume, indent=2)}
+
+The candidate has now provided more details about their projects and experience:
+{json.dumps(followup_answers, indent=2)}
+
+Here is the job description again, for reference:
+{jd_text}
+
+Update the resume to incorporate this new information. Only add details that are genuinely
+relevant to this job description. Do not exaggerate or invent anything the candidate did
+not provide. Keep the same JSON structure (contact_info, education, skills, projects,
+research, internships, work_experience, certifications, achievements, extracurriculars,
+volunteering, languages, interests), skipping sections with no data.
+
+Return ONLY valid JSON in this exact shape, no markdown, no explanation:
+{{
+  "final_resume": {{ }},
+  "changes_summary": ["...", "..."]
+}}
+"""
+
+    response = model.generate_content(prompt)
+    text = response.text.strip()
+
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+
     return json.loads(text)
