@@ -1,0 +1,589 @@
+[
+  {
+    "section_id": 1,
+    "section_name": "Contact Info",
+    "questions": [
+      {
+        "id": "q1_1",
+        "question_text": "What is your full name?",
+        "input_type": "text",
+        "required": true
+      },
+      {
+        "id": "q1_2",
+        "question_text": "What is your phone number and email address?",
+        "input_type": "text",
+        "required": true,
+        "hint": "Your email should look professional."
+      },
+      {
+        "id": "q1_3",
+        "question_text": "Which city and state are you based in right now?",
+        "input_type": "text",
+        "required": true
+      },
+      {
+        "id": "q1_4",
+        "question_text": "LinkedIn profile URL (optional)",
+        "input_type": "text",
+        "hint": "Leave blank if you don't have one yet.",
+        "required": false
+      },
+      {
+        "id": "q1_5",
+        "question_text": "GitHub profile URL (optional)",
+        "input_type": "text",
+        "hint": "Leave blank if you don't have one yet.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 2,
+    "section_name": "Education",
+    "questions": [
+      {
+        "id": "q2_1",
+        "question_text": "What degree are you pursuing or have you completed?",
+        "input_type": "mcq",
+        "options": ["B.Tech", "B.E.", "B.Sc.", "M.Tech", "MCA", "Diploma", "Other"],
+        "required": true
+      },
+      {
+        "id": "q2_2",
+        "question_text": "What is your branch or specialisation?",
+        "input_type": "text",
+        "hint": "e.g. Computer Science and Engineering, Electronics and Communication",
+        "required": true
+      },
+      {
+        "id": "q2_3",
+        "question_text": "Name of your college or university",
+        "input_type": "text",
+        "required": true
+      },
+      {
+        "id": "q2_4",
+        "question_text": "Expected graduation year",
+        "input_type": "mcq",
+        "options": ["2024", "2025", "2026", "2027", "2028", "Already graduated", "Other"],
+        "required": true
+      },
+      {
+        "id": "q2_5",
+        "question_text": "What is your current CGPA or percentage?",
+        "input_type": "text",
+        "required": true
+      },
+      {
+        "id": "q2_6",
+        "question_text": "Where did you do your Class 12 (HSC)? What was your percentage or grade?",
+        "input_type": "text",
+        "reassurance": "Many companies, especially for fresher roles, still ask for your Class 12 score. Just write the school name and your percentage or grade.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 3,
+    "section_name": "Programming Languages",
+    "questions": [
+      {
+        "id": "q3_1",
+        "question_text": "Which programming languages have you written code in?",
+        "input_type": "checkbox",
+        "options": ["C", "C++", "Java", "Python", "JavaScript", "TypeScript", "HTML/CSS", "SQL", "R", "MATLAB", "Dart/Flutter", "Kotlin", "Swift", "Go", "Rust", "Other"],
+        "hint": "Even just for assignments counts! If you wrote a C program in your first semester, select C.",
+        "reassurance": "Select everything you have ever written code in — no matter how basic or how long ago. Recruiters search resumes for specific language names, so the more complete this is, the better.",
+        "required": true
+      }
+    ]
+  },
+  {
+    "section_id": 4,
+    "section_name": "Tools & Frameworks",
+    "questions": [
+      {
+        "id": "q4_1",
+        "question_text": "Which tools or platforms have you used?",
+        "input_type": "checkbox",
+        "options": ["Git/GitHub", "VS Code", "Linux/Ubuntu", "Figma", "Jupyter Notebook", "Google Colab", "MySQL", "MongoDB", "Firebase", "Postman", "Docker", "Android Studio", "Other"],
+        "hint": "Even if you only opened it once for a lab session — if you have used it, tick it.",
+        "required": false
+      },
+      {
+        "id": "q4_2",
+        "question_text": "Which libraries or frameworks have you used?",
+        "input_type": "checkbox",
+        "options": ["React", "Node.js", "Flask", "Django", "Spring Boot", "NumPy", "Pandas", "Scikit-learn", "TensorFlow", "PyTorch", "OpenCV", "Express.js", "Next.js", "Vue.js", "Other"],
+        "hint": "Even briefly in a tutorial or project counts.",
+        "required": false
+      },
+      {
+        "id": "q4_3",
+        "question_text": "Do you have any non-technical skills that required real effort to develop?",
+        "input_type": "textarea",
+        "hint": "Think about public speaking, writing, design, teaching, event management, a musical instrument, a sport you trained for.",
+        "reassurance": "These are more valuable than they seem. A student who can speak confidently or write clearly stands out. Don't skip this just because it feels non-technical.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 5,
+    "section_name": "Projects",
+    "questions": [
+      {
+        "id": "q5_1",
+        "question_text": "Have you ever built anything — an app, website, game, ML model, chatbot, robot, or script — for a course, competition, hackathon, club, or just to learn something?",
+        "input_type": "mcq",
+        "options": ["Yes", "No — just small exercises or nothing yet", "Other"],
+        "hint": "Even just for assignments counts!",
+        "reassurance": "Don't worry about how impressive it sounds or the format of your answer. Just tell us what you built — we'll take care of the rest.",
+        "required": true
+      },
+      {
+        "id": "q5_2",
+        "question_text": "What was the project called?",
+        "input_type": "text",
+        "required": false
+      },
+      {
+        "id": "q5_3",
+        "question_text": "What problem did it solve? Who would use it?",
+        "input_type": "textarea",
+        "hint": "Even 'it was a college assignment on linked lists' is fine — just tell us what it did.",
+        "required": false
+      },
+      {
+        "id": "q5_4",
+        "question_text": "What technologies, languages, or tools did you use?",
+        "input_type": "text",
+        "reassurance": "No specific format needed. 'Python and Flask', 'just C++', 'HTML/CSS/JS' — anything works. We'll format it properly.",
+        "required": false
+      },
+      {
+        "id": "q5_5",
+        "question_text": "Did you build it alone or with a team?",
+        "input_type": "mcq",
+        "options": ["Built it alone", "With a team of 2", "With a team of 3-4", "With a team of 5+", "Other"],
+        "required": false
+      },
+      {
+        "id": "q5_6",
+        "question_text": "What was your specific role in the project?",
+        "input_type": "text",
+        "hint": "e.g. 'Built the ML model and REST API'; or 'I did everything'",
+        "required": false
+      },
+      {
+        "id": "q5_7",
+        "question_text": "GitHub link or live URL (optional)",
+        "input_type": "text",
+        "required": false
+      },
+      {
+        "id": "q5_8",
+        "question_text": "Did it win any prize or get any recognition?",
+        "input_type": "mcq",
+        "options": ["Yes — won a prize", "Finalist / runner-up", "No award, but it works", "No award", "Other"],
+        "required": false
+      },
+      {
+        "id": "q5_9",
+        "question_text": "Did you do any course projects, mini-projects, or semester projects you are proud of — even if they were just for college submissions?",
+        "input_type": "textarea",
+        "reassurance": "Even a 'basic' college submission belongs here. A library system, a simple calculator app — these show you applied what you learned in class. Don't underestimate them.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 6,
+    "section_name": "Internships",
+    "questions": [
+      {
+        "id": "q6_1",
+        "question_text": "Have you done any internship — paid or unpaid, at a company, startup, research lab, or remotely — even for just 2–4 weeks?",
+        "input_type": "mcq",
+        "options": ["Yes", "No, but I did a virtual or online program", "No internship yet", "Other"],
+        "hint": "Even a short 2-week internship at a local company counts.",
+        "required": true
+      },
+      {
+        "id": "q6_2",
+        "question_text": "Company name and what they do",
+        "input_type": "text",
+        "hint": "e.g. DeepBlue — AI services startup",
+        "required": false
+      },
+      {
+        "id": "q6_3",
+        "question_text": "Your role or title",
+        "input_type": "text",
+        "hint": "e.g. Software Development Intern",
+        "required": false
+      },
+      {
+        "id": "q6_4",
+        "question_text": "Duration and year",
+        "input_type": "text",
+        "hint": "e.g. June – July 2025 (1 month)",
+        "required": false
+      },
+      {
+        "id": "q6_5",
+        "question_text": "What did you actually work on day-to-day?",
+        "input_type": "textarea",
+        "reassurance": "Don't just write your job title. Think: what did you build, fix, or improve? Even one specific thing — 'built the login page' or 'helped debug the API' — is more powerful than a vague description.",
+        "required": false
+      },
+      {
+        "id": "q6_6",
+        "question_text": "Name of the program and platform",
+        "input_type": "text",
+        "hint": "e.g. Infosys Springboard — Python for Data Science (4-week virtual internship, 2024)",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 7,
+    "section_name": "Work Experience",
+    "questions": [
+      {
+        "id": "q7_1",
+        "question_text": "Have you done any paid or unpaid work outside of internships?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "Think about freelance projects, part-time jobs, tutoring, family business work, content creation.",
+        "reassurance": "This section is for anything that wasn't a formal internship. Even tutoring a neighbour's kid for a few months, or building a website for a local shop for cash — that is real work experience and belongs on your resume.",
+        "required": false
+      },
+      {
+        "id": "q7_2",
+        "question_text": "What type of work was it?",
+        "input_type": "mcq",
+        "options": ["Freelance / contract project", "Part-time job", "Full-time job", "Family business", "Teaching / tutoring", "Content creation / social media", "Other"],
+        "required": false
+      },
+      {
+        "id": "q7_3",
+        "question_text": "Company, client, or organisation name (if any)",
+        "input_type": "text",
+        "hint": "e.g. Self-employed / Freelance; or 'Local bakery'",
+        "required": false
+      },
+      {
+        "id": "q7_4",
+        "question_text": "Your role or title",
+        "input_type": "text",
+        "hint": "e.g. Freelance Web Developer; Part-time Cashier; Maths Tutor",
+        "required": false
+      },
+      {
+        "id": "q7_5",
+        "question_text": "Duration",
+        "input_type": "text",
+        "hint": "e.g. June 2024 – August 2024; or 'Ongoing since Jan 2024'",
+        "required": false
+      },
+      {
+        "id": "q7_6",
+        "question_text": "What did you do? What did you build, deliver, or achieve?",
+        "input_type": "textarea",
+        "reassurance": "Be specific — even one concrete detail makes a huge difference. 'Built a 3-page website for a local restaurant' is stronger than 'did web development'. Format doesn't matter at all — just tell us what you did.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 8,
+    "section_name": "Certifications",
+    "questions": [
+      {
+        "id": "q8_1",
+        "question_text": "Have you completed any online courses with a certificate?",
+        "input_type": "mcq",
+        "options": ["Yes, one or more", "No", "Other"],
+        "hint": "Think about Coursera, NPTEL, edX, Udemy, LinkedIn Learning, AWS, Google, or similar platforms.",
+        "required": false
+      },
+      {
+        "id": "q8_2",
+        "question_text": "Name the course(s), platform, and any grade received",
+        "input_type": "textarea",
+        "hint": "e.g. NPTEL Python for Data Science — IIT Madras, Elite certificate (8 weeks, 2024)",
+        "required": false
+      },
+      {
+        "id": "q8_3",
+        "question_text": "Have you cleared any industry certification exams?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "e.g. AWS Cloud Practitioner, HackerRank, TCS NQT, GATE, Google Analytics",
+        "required": false
+      },
+      {
+        "id": "q8_4",
+        "question_text": "Which exam and what score or badge?",
+        "input_type": "text",
+        "hint": "e.g. HackerRank SQL — Gold badge; AWS Cloud Practitioner 2024",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 9,
+    "section_name": "Achievements",
+    "questions": [
+      {
+        "id": "q9_1",
+        "question_text": "Have you won, been runner-up, or reached the finals of any competition?",
+        "input_type": "mcq",
+        "options": ["Yes — won a prize", "Finalist / runner-up", "Participated only", "No", "Other"],
+        "hint": "Think about coding contests, hackathons, quiz competitions, debates, sports tournaments, tech fests.",
+        "required": false
+      },
+      {
+        "id": "q9_2",
+        "question_text": "Name of the competition and what you built or solved",
+        "input_type": "textarea",
+        "hint": "e.g. Smart India Hackathon 2024 internal finalist — built an air quality monitoring system with a team of 4",
+        "required": false
+      },
+      {
+        "id": "q9_3",
+        "question_text": "Have you been selected for any special program, scholarship, or merit recognition?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "e.g. MITACS, DAAD, research fellowships, merit scholarships",
+        "required": false
+      },
+      {
+        "id": "q9_4",
+        "question_text": "Describe it briefly",
+        "input_type": "text",
+        "hint": "e.g. Merit scholarship for top 5% CGPA in 2nd year, APJ KTU",
+        "required": false
+      },
+      {
+        "id": "q9_5",
+        "question_text": "Have you ranked highly in any exam, contest, or class?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "JEE, GATE, state-level tests, LeetCode, Codeforces, CodeChef, or even top of your class.",
+        "required": false
+      },
+      {
+        "id": "q9_6",
+        "question_text": "Which exam / platform and what rank or percentile?",
+        "input_type": "text",
+        "hint": "e.g. JEE Main 97.4 percentile; LeetCode top 10% rating, 250+ problems",
+        "required": false
+      },
+      {
+        "id": "q9_7",
+        "question_text": "Have you had anything published — a paper, a blog, a GitHub repo that got stars, or an open source contribution?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "required": false
+      },
+      {
+        "id": "q9_8",
+        "question_text": "Describe it and include a link if possible",
+        "input_type": "text",
+        "hint": "e.g. Co-authored paper submitted to IEEE ICCSEA 2025 on image segmentation",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 10,
+    "section_name": "Research",
+    "questions": [
+      {
+        "id": "q10_1",
+        "question_text": "Have you worked with any professor, research lab, or research group on a study, experiment, or paper — even as a student helper or volunteer?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "Even if you just helped collect data, run experiments, or review papers for a professor — that counts.",
+        "reassurance": "Research experience is one of the most impressive things on a fresher resume. Even 'I helped my professor collect survey data for 2 weeks' is worth mentioning. Don't skip this if anything comes to mind.",
+        "required": false
+      },
+      {
+        "id": "q10_2",
+        "question_text": "Professor / lab name and institution",
+        "input_type": "text",
+        "hint": "e.g. Under Dr. Priya Nair, NIT Trichy — Computer Vision Lab",
+        "required": false
+      },
+      {
+        "id": "q10_3",
+        "question_text": "What was the topic or problem you were working on?",
+        "input_type": "textarea",
+        "hint": "e.g. GAN-based image synthesis for medical imaging; or 'I helped with data collection for a survey on student mental health'",
+        "required": false
+      },
+      {
+        "id": "q10_4",
+        "question_text": "Duration",
+        "input_type": "text",
+        "hint": "e.g. Jan – May 2025 (5 months)",
+        "required": false
+      },
+      {
+        "id": "q10_5",
+        "question_text": "Did it lead to a paper, poster, or presentation?",
+        "input_type": "mcq",
+        "options": ["Yes — published or submitted paper", "Poster presentation", "Conference presentation", "No formal output yet", "Other"],
+        "required": false
+      },
+      {
+        "id": "q10_6",
+        "question_text": "Tools or methods used",
+        "input_type": "text",
+        "hint": "e.g. Python, PyTorch, LaTeX; or 'Google Forms, Excel, SPSS'",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 11,
+    "section_name": "Leadership & Positions",
+    "questions": [
+      {
+        "id": "q11_1",
+        "question_text": "Have you held any official position in a club, student body, or committee at your college?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "e.g. President, Vice President, Secretary, Technical Head, Event Coordinator, Class Representative",
+        "required": false
+      },
+      {
+        "id": "q11_2",
+        "question_text": "Role, organisation, and duration",
+        "input_type": "text",
+        "hint": "e.g. Technical Head, IEEE Student Branch, 2023–24",
+        "required": false
+      },
+      {
+        "id": "q11_3",
+        "question_text": "What did you do in that role?",
+        "input_type": "textarea",
+        "reassurance": "Think about specific things: Did you organise events? Manage a team? Raise funds? Get sponsorships? Teach juniors? Even small contributions like 'managed WhatsApp group and attendance for 60 students' tells a story.",
+        "required": false
+      },
+      {
+        "id": "q11_4",
+        "question_text": "Have you led a team informally — for a hackathon, project, college event, or any group activity?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "You don't need a title. If you were the one who delegated tasks, kept people together, or made decisions for the group — that is leadership.",
+        "required": false
+      },
+      {
+        "id": "q11_5",
+        "question_text": "Briefly describe it",
+        "input_type": "text",
+        "hint": "e.g. Led a 4-person team at a 24-hour internal hackathon; managed task delegation and final presentation",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 12,
+    "section_name": "Extracurriculars",
+    "questions": [
+      {
+        "id": "q12_1",
+        "question_text": "Are you a member of any technical club, cultural group, sports team, or community at your college or outside it?",
+        "input_type": "textarea",
+        "required": false
+      },
+      {
+        "id": "q12_2",
+        "question_text": "Have you attended or organised any tech events, workshops, hackathons, or webinars?",
+        "input_type": "mcq",
+        "options": ["Organised events", "Attended as participant", "Both", "None", "Other"],
+        "required": false
+      },
+      {
+        "id": "q12_3",
+        "question_text": "Name the event(s) and your role",
+        "input_type": "textarea",
+        "hint": "e.g. Co-organised TechXplore 2024 — 2-day inter-college tech fest with 400+ participants",
+        "required": false
+      },
+      {
+        "id": "q12_4",
+        "question_text": "Do you have any creative output — blog, YouTube channel, design portfolio, GitHub projects with followers, or open source contributions?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "required": false
+      },
+      {
+        "id": "q12_5",
+        "question_text": "Describe it and include a link if possible",
+        "input_type": "text",
+        "hint": "e.g. Tech blog on Medium — 500+ monthly readers; Figma design portfolio link",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 13,
+    "section_name": "Volunteering",
+    "questions": [
+      {
+        "id": "q13_1",
+        "question_text": "Have you volunteered for any cause, event, or organisation — at college, in your community, or online?",
+        "input_type": "mcq",
+        "options": ["Yes", "No", "Other"],
+        "hint": "Even one-time events count. Helped at a blood donation camp? Taught juniors? Participated in a clean-up drive?",
+        "required": false
+      },
+      {
+        "id": "q13_2",
+        "question_text": "What did you do, for how long, and was there a certificate?",
+        "input_type": "textarea",
+        "hint": "e.g. NSS teaching volunteer — helped underprivileged students with maths for 40+ hours; received certificate",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 14,
+    "section_name": "Languages Spoken",
+    "questions": [
+      {
+        "id": "q14_1",
+        "question_text": "Which languages can you speak and / or write fluently?",
+        "input_type": "textarea",
+        "hint": "Include all — regional languages absolutely count. Malayalam, Tamil, Hindi, Kannada — all of these are valuable.",
+        "required": false
+      }
+    ]
+  },
+  {
+    "section_id": 15,
+    "section_name": "Interests & Hobbies",
+    "questions": [
+      {
+        "id": "q15_1",
+        "question_text": "What are you genuinely interested in or excited about in tech or your field?",
+        "input_type": "textarea",
+        "hint": "Be honest — not just what sounds impressive. What do you actually enjoy reading about, building, or learning?",
+        "required": false
+      },
+      {
+        "id": "q15_2",
+        "question_text": "Outside of tech and academics, what do you enjoy doing consistently?",
+        "input_type": "textarea",
+        "hint": "A hobby you have done for over a year is more credible than a one-off.",
+        "reassurance": "Painting, cooking, chess, music, sport, writing, crafts — all of these are real hobbies worth mentioning. You do not need to justify them as 'useful'.",
+        "required": false
+      }
+    ]
+  }
+]
