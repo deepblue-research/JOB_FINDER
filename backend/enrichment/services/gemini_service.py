@@ -95,7 +95,7 @@ IMPORTANT: Do NOT remove or simplify any details from the original answers. Only
 - contact_info (name, phone, email, location, linkedin, github)
 - education (degree, branch, college, graduation_year, cgpa, class_12)
 - skills (programming_languages, tools, frameworks, soft_skills)
-- projects (list of projects, each with: name, description, technologies, role, team_size, github_url, award)
+- projects: [{{name, description: [list of 2-3 bullet point strings — NOT "bullets", use the exact key "description"], technologies, role, team_size, github_url, award}}]
 - research (professor, institution, topic, duration, output, tools)
 - internships (company, role, duration, tasks)
 - work_experience (type, company, role, duration, description)
@@ -119,7 +119,9 @@ Return ONLY valid JSON. No explanation, no extra text, no markdown formatting.
         if text.startswith("json"):
             text = text[4:]
     
-    return json.loads(text)
+    parsed = json.loads(text)
+    print("DEBUG IMPROVE OUTPUT:", parsed)
+    return parsed
 
 
 def generate_l3_round1(resume_text: str, jd_text: str) -> dict:
@@ -139,10 +141,21 @@ Do three things:
 1. Rewrite the resume content to better match the keywords, tools, and requirements in the job
    description. Only change wording, phrasing, and emphasis — do NOT add skills, projects,
    experience, or qualifications the candidate does not already have.
-   Structure the rewritten resume as JSON with these sections (skip any section with no data):
-   contact_info, education, skills, projects, research, internships, work_experience,
-   certifications, achievements, extracurriculars, volunteering, languages, interests.
-   For each project and experience entry, write 2-3 bullet points starting with action verbs.
+   Structure the rewritten resume as JSON with these sections (skip any section with no data).
+   Use EXACTLY these field names and shapes for each section — do not invent new field names:
+   - contact_info: {{name, phone, email, location, linkedin, github}}
+   - education: {{degree, branch, college, graduation_year, cgpa, class_12}}
+   - skills: {{programming_languages: [...], frameworks: [...], tools: [...], soft_skills: "..."}}
+   - projects: [{{name, description: [list of 2-3 bullet point strings], technologies, role, team_size, github_url, award}}]
+   - research: {{professor, institution, topic, duration, output, tools}}
+   - internships: [{{company, role, duration, tasks: [list of strings]}}]
+   - work_experience: [{{type, company, role, duration, description}}]
+   - certifications: [list of strings]
+   - achievements: {{competitions, scholarships, rankings, publications}}
+   - extracurriculars: {{clubs, events, creative_output}}
+   - volunteering: "..." (a string, or list of strings)
+   - languages: [list of strings]
+   - interests: {{tech_interests: [...], hobbies: [...]}}
 
 2. Look at the candidate's projects and experience. Find anything relevant to this job but
    thin on detail. Write 3-6 specific follow-up questions to gather more information.
@@ -175,7 +188,10 @@ Return ONLY valid JSON in this exact shape, no markdown, no explanation:
         if text.startswith("json"):
             text = text[4:]
 
-    return json.loads(text)
+    parsed = json.loads(text)
+    print("DEBUG L3R1 TYPE:", type(parsed))
+    print("DEBUG L3R1 OUTPUT:", parsed)
+    return parsed
 
 
 def generate_l3_round2(rewritten_resume: dict, followup_answers: dict, jd_text: str) -> dict:

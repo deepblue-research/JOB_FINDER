@@ -97,14 +97,26 @@ def format_resume(resume_json: dict, output_path: str):
     skills = resume_json.get("skills", {})
     if skills:
         add_section_heading(doc, "Skills")
-        if skills.get("programming_languages"):
-            add_normal(doc, f"Languages: {', '.join(skills['programming_languages'])}")
-        if skills.get("frameworks"):
-            add_normal(doc, f"Frameworks: {', '.join(skills['frameworks'])}")
-        if skills.get("tools"):
-            add_normal(doc, f"Tools: {', '.join(skills['tools'])}")
-        if skills.get("soft_skills"):
-            add_normal(doc, f"Soft Skills: {skills['soft_skills']}")
+        if isinstance(skills, list):
+            # Gemini sometimes returns a flat list instead of a dict — handle both
+            add_normal(doc, ", ".join(str(s) for s in skills))
+        elif isinstance(skills, dict):
+            if skills.get("programming_languages"):
+                add_normal(doc, f"Languages: {', '.join(skills['programming_languages'])}")
+            if skills.get("web_frameworks"):
+                add_normal(doc, f"Frameworks: {', '.join(skills['web_frameworks'])}")
+            if skills.get("frameworks"):
+                add_normal(doc, f"Frameworks: {', '.join(skills['frameworks'])}")
+            if skills.get("tools_and_technologies"):
+                add_normal(doc, f"Tools: {', '.join(skills['tools_and_technologies'])}")
+            if skills.get("tools"):
+                add_normal(doc, f"Tools: {', '.join(skills['tools'])}")
+            if skills.get("apis"):
+                add_normal(doc, f"APIs: {', '.join(skills['apis'])}")
+            if skills.get("soft_skills"):
+                add_normal(doc, f"Soft Skills: {skills['soft_skills']}")
+        else:
+            add_normal(doc, str(skills))
 
     # --- PROJECTS ---
     projects = resume_json.get("projects", [])
@@ -114,12 +126,14 @@ def format_resume(resume_json: dict, output_path: str):
             add_normal(doc, project.get("name", ""), bold=True)
             if project.get("technologies"):
                 add_normal(doc, f"Technologies: {project['technologies']}")
-            if project.get("description"):
-                if isinstance(project["description"], list):
-                    for bullet in project["description"]:
+            # Gemini sometimes uses "bullets" instead of "description" — check both
+            description = project.get("description") or project.get("bullets")
+            if description:
+                if isinstance(description, list):
+                    for bullet in description:
                         add_bullet(doc, bullet)
                 else:
-                    add_bullet(doc, project["description"])
+                    add_bullet(doc, description)
             if project.get("github_url"):
                 add_normal(doc, f"Link: {project['github_url']}")
             if project.get("award"):
@@ -127,7 +141,10 @@ def format_resume(resume_json: dict, output_path: str):
 
     # --- RESEARCH ---
     research = resume_json.get("research", {})
-    if research and research.get("topic"):
+    if isinstance(research, list):
+        # Gemini sometimes returns a list of research entries — handle that too
+        research = research[0] if research else {}
+    if isinstance(research, dict) and research.get("topic"):
         add_section_heading(doc, "Research")
         if research.get("professor") and research.get("institution"):
             add_normal(doc, f"Under {research['professor']}, {research['institution']}", bold=True)
@@ -170,10 +187,15 @@ def format_resume(resume_json: dict, output_path: str):
                 if job.get("duration"):
                     add_normal(doc, job["duration"])
                 if job.get("description"):
-                    add_bullet(doc, job["description"])
+                    description = job["description"]
+                    if isinstance(description, list):
+                        for bullet in description:
+                            add_bullet(doc, bullet)
+                    else:
+                        add_bullet(doc, description)
         else:
             add_normal(doc, f"{work.get('role', '')} — {work.get('company', '')}", bold=True)
-
+            
     # --- CERTIFICATIONS ---
     certifications = resume_json.get("certifications", [])
     if certifications:
@@ -188,35 +210,39 @@ def format_resume(resume_json: dict, output_path: str):
     achievements = resume_json.get("achievements", {})
     if achievements:
         add_section_heading(doc, "Achievements")
-        if achievements.get("competitions"):
-            add_bullet(doc, achievements["competitions"])
-        if achievements.get("scholarships"):
-            add_bullet(doc, achievements["scholarships"])
-        if achievements.get("rankings"):
-            add_bullet(doc, achievements["rankings"])
-        if achievements.get("publications"):
-            add_bullet(doc, achievements["publications"])
+        if isinstance(achievements, list):
+            # Gemini sometimes returns a flat list instead of a dict — handle both
+            for item in achievements:
+                add_bullet(doc, str(item))
+        elif isinstance(achievements, dict):
+            if achievements.get("competitions"):
+                add_bullet(doc, achievements["competitions"])
+            if achievements.get("scholarships"):
+                add_bullet(doc, achievements["scholarships"])
+            if achievements.get("rankings"):
+                add_bullet(doc, achievements["rankings"])
+            if achievements.get("publications"):
+                add_bullet(doc, achievements["publications"])
+        else:
+            add_normal(doc, str(achievements))
 
     # --- EXTRACURRICULARS ---
     extra = resume_json.get("extracurriculars", {})
     if extra:
         add_section_heading(doc, "Extracurriculars")
-        if extra.get("clubs"):
-            add_normal(doc, extra["clubs"])
-        if extra.get("events"):
-            add_bullet(doc, extra["events"])
-        if extra.get("creative_output"):
-            add_bullet(doc, extra["creative_output"])
-
-    # --- VOLUNTEERING ---
-    volunteering = resume_json.get("volunteering", "")
-    if volunteering:
-        add_section_heading(doc, "Volunteering")
-        if isinstance(volunteering, list):
-            for v in volunteering:
-                add_bullet(doc, v)
+        if isinstance(extra, list):
+            # Gemini sometimes returns a flat list instead of a dict — handle both
+            for item in extra:
+                add_bullet(doc, str(item))
+        elif isinstance(extra, dict):
+            if extra.get("clubs"):
+                add_normal(doc, extra["clubs"])
+            if extra.get("events"):
+                add_bullet(doc, extra["events"])
+            if extra.get("creative_output"):
+                add_bullet(doc, extra["creative_output"])
         else:
-            add_bullet(doc, str(volunteering))
+            add_normal(doc, str(extra))
 
     # --- LANGUAGES ---
     languages = resume_json.get("languages", [])
@@ -231,14 +257,21 @@ def format_resume(resume_json: dict, output_path: str):
     interests = resume_json.get("interests", {})
     if interests:
         add_section_heading(doc, "Interests")
-        if interests.get("tech_interests"):
-            tech = interests["tech_interests"]
-            if isinstance(tech, list):
-                tech = ", ".join(tech)
-            add_normal(doc, f"Tech: {tech}")
-        if interests.get("hobbies"):
-            hobbies = interests["hobbies"]
-            if isinstance(hobbies, list):
-                hobbies = ", ".join(hobbies)
-            add_normal(doc, f"Hobbies: {hobbies}")
+        if isinstance(interests, list):
+            # Gemini sometimes returns a flat list instead of a dict — handle both
+            add_normal(doc, ", ".join(str(i) for i in interests))
+        elif isinstance(interests, dict):
+            if interests.get("tech_interests"):
+                tech = interests["tech_interests"]
+                if isinstance(tech, list):
+                    tech = ", ".join(tech)
+                add_normal(doc, f"Tech: {tech}")
+            if interests.get("hobbies"):
+                hobbies = interests["hobbies"]
+                if isinstance(hobbies, list):
+                    hobbies = ", ".join(hobbies)
+                add_normal(doc, f"Hobbies: {hobbies}")
+        else:
+            add_normal(doc, str(interests))
+
     doc.save(output_path)
