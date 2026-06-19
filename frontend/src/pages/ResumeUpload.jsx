@@ -11,7 +11,16 @@ const ResumeUpload = () => {
   const [existingResume, setExistingResume] = useState(null);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [replacing, setReplacing] = useState(false);
+  const [parseProgress, setParseProgress] = useState(0);
+  const [parseStepIndex, setParseStepIndex] = useState(0);
   const navigate = useNavigate();
+
+  const PARSE_STEPS = [
+    'Reading your resume…',
+    'Extracting skills…',
+    'Scoring ATS compatibility…',
+    'Almost done…',
+  ];
 
   useEffect(() => {
     const fetchExisting = async () => {
@@ -19,7 +28,7 @@ const ResumeUpload = () => {
         const res = await client.get('/api/resumes/');
         setExistingResume(res.data);
       } catch (e) {
-        // 404 means no resume yet — show upload form
+        // 404 = no resume yet
       } finally {
         setCheckingExisting(false);
       }
@@ -43,106 +52,172 @@ const ResumeUpload = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please select a file first.');
-      return;
-    }
+    if (!file) { setError('Please select a file first.'); return; }
     setIsLoading(true);
     setError(null);
-    setUploadStatus('uploading');
+    setUploadStatus('parsing');
+    setParseProgress(0);
+    setParseStepIndex(0);
+
+    // Animate progress bar while upload is in flight
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 8 + 3;
+      if (progress >= 90) { progress = 90; clearInterval(progressInterval); }
+      setParseProgress(Math.round(progress));
+      setParseStepIndex(Math.min(Math.floor(progress / 25), 3));
+    }, 400);
+
     const formData = new FormData();
     formData.append('file', file);
     try {
-      setUploadStatus('processing');
       const response = await client.post('/api/resumes/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResults(response.data);
-      setExistingResume(null);
-      setReplacing(false);
+      clearInterval(progressInterval);
+      setParseProgress(100);
+      setParseStepIndex(3);
+      setTimeout(() => {
+        setResults(response.data);
+        setExistingResume(null);
+        setReplacing(false);
+        setIsLoading(false);
+        setUploadStatus(null);
+      }, 400);
     } catch (err) {
+      clearInterval(progressInterval);
       setError(err.response?.data?.detail || 'Failed to upload resume. Please try again.');
-    } finally {
       setIsLoading(false);
       setUploadStatus(null);
     }
   };
 
-  // Initial loading check
   if (checkingExisting) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-20 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" />
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 240 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%',
+          border: '4px solid rgba(15,23,42,0.08)',
+          borderTopColor: '#2563eb',
+          animation: 'spin 0.9s linear infinite',
+        }} />
       </div>
     );
   }
 
-  // After fresh upload — show results
+  // Parsing / uploading screen
+  if (uploadStatus === 'parsing') {
+    return (
+      <div className="animate-fadeUp" style={{
+        maxWidth: 560, margin: '0 auto',
+        padding: 'clamp(60px,10vw,120px) clamp(20px,5vw,40px)',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 74, height: 74, margin: '0 auto 28px',
+          borderRadius: '50%',
+          border: '4px solid rgba(15,23,42,0.08)',
+          borderTopColor: '#2563eb',
+          animation: 'spin 0.9s linear infinite',
+        }} />
+        <h2 style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 24, marginBottom: 10 }}>
+          {PARSE_STEPS[parseStepIndex]}
+        </h2>
+        <p style={{ color: '#94a3b8', fontSize: 14.5, marginBottom: 30 }}>{file?.name}</p>
+        <div style={{ height: 8, borderRadius: 99, background: 'rgba(15,23,42,0.08)', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${parseProgress}%`,
+            borderRadius: 99,
+            background: '#2563eb',
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
+        <div style={{ marginTop: 12, fontFamily: "'Space Grotesk'", fontWeight: 600, color: '#64748b', fontSize: 14 }}>
+          {parseProgress}%
+        </div>
+      </div>
+    );
+  }
+
+  // After upload — show results
   if (results) {
     const { ats_score, ats_tips, parsed_data } = results;
-    const isGoodScore = ats_score >= 40;
+    const isGood = ats_score >= 40;
 
     return (
-      <div className="max-w-2xl mx-auto px-4 py-10 md:py-16">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-8">
-          <div className="text-center mb-8">
-            <div className={`inline-flex items-center justify-center h-20 w-20 rounded-2xl mb-4 shadow-sm ${isGoodScore ? 'bg-green-100' : 'bg-red-100'}`}>
-              <span className={`text-2xl font-black ${isGoodScore ? 'text-green-600' : 'text-red-600'}`}>
+      <div className="animate-fadeUp" style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(28px,5vw,56px) clamp(20px,5vw,40px)' }}>
+        <div className="card" style={{ padding: 'clamp(24px,4vw,40px)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div className="animate-pop" style={{
+              width: 84, height: 84, margin: '0 auto 20px',
+              borderRadius: '50%',
+              background: isGood ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.1)',
+              border: `1px solid ${isGood ? 'rgba(5,150,105,0.3)' : 'rgba(220,38,38,0.25)'}`,
+              display: 'grid', placeItems: 'center',
+            }}>
+              <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 26, color: isGood ? '#059669' : '#dc2626' }}>
                 {Math.round(ats_score)}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isGoodScore ? 'Resume Analysis Complete' : 'Action Required'}
+            <h1 style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 'clamp(24px,3vw,30px)', letterSpacing: '-0.02em', marginBottom: 6 }}>
+              {isGood ? 'Resume Analysis Complete' : 'Action Required'}
             </h1>
-            <p className="text-gray-500 mt-2 text-sm">
-              ATS Compatibility Score: <span className="font-semibold">{Math.round(ats_score)}/100</span>
-            </p>
+            <p style={{ color: '#64748b', fontSize: 14.5 }}>ATS Compatibility Score: <strong>{Math.round(ats_score)}/100</strong></p>
           </div>
 
-          {!isGoodScore && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-              <h3 className="text-red-800 font-semibold mb-3 flex items-center gap-2 text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Issues to fix
-              </h3>
-              <ul className="space-y-2">
+          {!isGood && ats_tips?.length > 0 && (
+            <div style={{
+              background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 14, padding: 18, marginBottom: 22,
+            }}>
+              <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 14, color: '#dc2626', marginBottom: 10 }}>Issues to fix</div>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {ats_tips.map((tip, i) => (
-                  <li key={i} className="text-red-700 text-sm flex items-start gap-2">
-                    <span className="mt-0.5 text-red-400">•</span>{tip}
+                  <li key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13.5, color: '#b91c1c' }}>
+                    <span style={{ color: '#dc2626', flexShrink: 0 }}>›</span>{tip}
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={() => { setResults(null); setFile(null); }}
-                className="mt-5 w-full bg-red-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-red-700 transition-colors"
-              >
-                Re-upload improved resume
-              </button>
             </div>
           )}
 
-          {isGoodScore && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Extracted Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {parsed_data.skills?.map((skill, i) => (
-                    <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-medium rounded-full">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+          {isGood && parsed_data?.skills?.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div className="section-label" style={{ marginBottom: 12 }}>Skills we found</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {parsed_data.skills.map((skill, i) => (
+                  <span key={i} className="skill-tag">✓ {skill}</span>
+                ))}
               </div>
-              <button
-                onClick={() => navigate('/jobs')}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm"
-              >
-                Find matching jobs →
-              </button>
             </div>
           )}
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/jobs')}
+              style={{
+                flex: 1, minWidth: 180, padding: '15px 24px', border: 'none', borderRadius: 12,
+                background: '#2563eb', color: '#fff',
+                fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16, cursor: 'pointer',
+                boxShadow: '0 14px 34px -16px #2563eb',
+              }}
+            >
+              {isGood ? 'Find matching jobs →' : 'View jobs anyway →'}
+            </button>
+            {!isGood && (
+              <button
+                onClick={() => { setResults(null); setFile(null); }}
+                style={{
+                  padding: '15px 24px', borderRadius: 12,
+                  background: 'transparent', border: '1px solid rgba(15,23,42,0.12)',
+                  color: '#1e293b', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                }}
+              >
+                Re-upload
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -152,47 +227,62 @@ const ResumeUpload = () => {
   if (existingResume && !replacing) {
     const skills = existingResume.skills_keywords?.skills || [];
     const atsScore = existingResume.ats_score ? Math.round(existingResume.ats_score) : null;
-    const isGoodScore = atsScore >= 40;
+    const isGood = atsScore >= 40;
 
     return (
-      <div className="max-w-2xl mx-auto px-4 py-10 md:py-16">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-8">
-          <div className="flex items-start justify-between mb-6">
+      <div className="animate-fadeUp" style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(28px,5vw,56px) clamp(20px,5vw,40px)' }}>
+        <div className="card" style={{ padding: 'clamp(24px,4vw,40px)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Your Resume</h1>
-              <p className="text-gray-500 text-sm mt-1">Resume on file and ready for matching</p>
+              <h1 style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 'clamp(22px,3vw,28px)', letterSpacing: '-0.02em', marginBottom: 6 }}>
+                Your Resume
+              </h1>
+              <p style={{ color: '#64748b', fontSize: 14.5 }}>Resume on file and ready for matching</p>
             </div>
             {atsScore !== null && (
-              <div className={`flex flex-col items-center px-4 py-2.5 rounded-xl ${isGoodScore ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
-                <span className={`text-2xl font-black leading-none ${isGoodScore ? 'text-green-600' : 'text-amber-600'}`}>{atsScore}</span>
-                <span className={`text-xs font-medium mt-0.5 ${isGoodScore ? 'text-green-500' : 'text-amber-500'}`}>ATS Score</span>
+              <div style={{
+                padding: '12px 18px', borderRadius: 14, textAlign: 'center',
+                background: isGood ? 'rgba(5,150,105,0.1)' : 'rgba(245,158,11,0.1)',
+                border: `1px solid ${isGood ? 'rgba(5,150,105,0.25)' : 'rgba(245,158,11,0.25)'}`,
+              }}>
+                <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 24, color: isGood ? '#059669' : '#d97706' }}>
+                  {atsScore}
+                </div>
+                <div style={{ fontSize: 12, color: isGood ? '#059669' : '#d97706', fontWeight: 600, marginTop: 2 }}>ATS Score</div>
               </div>
             )}
           </div>
 
           {skills.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Detected Skills</h3>
-              <div className="flex flex-wrap gap-2">
+            <div style={{ marginBottom: 22 }}>
+              <div className="section-label" style={{ marginBottom: 10 }}>Detected skills</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {skills.slice(0, 15).map((skill, i) => (
-                  <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-medium rounded-full">
-                    {skill}
-                  </span>
+                  <span key={i} className="skill-tag">✓ {skill}</span>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+          <div style={{ height: 1, background: 'rgba(15,23,42,0.07)', marginBottom: 20 }} />
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button
               onClick={() => navigate('/jobs')}
-              className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors text-center"
+              style={{
+                flex: 1, minWidth: 180, padding: '14px 24px', border: 'none', borderRadius: 12,
+                background: '#2563eb', color: '#fff',
+                fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, cursor: 'pointer',
+              }}
             >
               View Job Matches →
             </button>
             <button
               onClick={() => setReplacing(true)}
-              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors text-center"
+              style={{
+                padding: '14px 24px', borderRadius: 12,
+                background: 'transparent', border: '1px solid rgba(15,23,42,0.12)',
+                color: '#1e293b', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15, cursor: 'pointer',
+              }}
             >
               Replace Resume
             </button>
@@ -202,90 +292,94 @@ const ResumeUpload = () => {
     );
   }
 
-  // Upload form (no resume yet, or replacing)
+  // Upload form
   return (
-    <div className="max-w-xl mx-auto px-4 py-10 md:py-16">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-8">
-        <div className="mb-8">
-          {!replacing && <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Step 2 of 2</span>}
-          <h1 className="text-2xl font-bold text-gray-900 mt-4">
-            {replacing ? 'Replace your resume' : 'Upload your resume'}
-          </h1>
-          <p className="text-gray-500 mt-1.5 text-sm">
-            {replacing ? 'Upload a new PDF to replace your current resume.' : 'We\'ll analyse your skills and match you with the best jobs'}
-          </p>
-        </div>
+    <div className="animate-fadeUp" style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(40px,6vw,80px) clamp(20px,5vw,40px)' }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <h1 style={{
+          fontFamily: "'Space Grotesk'", fontWeight: 700,
+          fontSize: 'clamp(30px,4vw,42px)', letterSpacing: '-0.02em', marginBottom: 12,
+        }}>Upload your resume</h1>
+        <p style={{ color: '#64748b', fontSize: 16.5, lineHeight: 1.5 }}>
+          We'll read it in seconds and match you to roles you can actually land.
+        </p>
+      </div>
 
-        <form onSubmit={handleUpload} className="space-y-5">
-          <label className="block cursor-pointer">
-            <div className={`border-2 border-dashed rounded-xl p-10 text-center transition-all duration-200 ${file ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/40'}`}>
-              <input type="file" onChange={handleFileChange} accept=".pdf" className="hidden" />
-              <svg className="mx-auto h-10 w-10 text-gray-300 mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <p className="text-sm text-gray-500">
-                <span className="font-semibold text-blue-600">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-xs text-gray-400 mt-1">PDF up to 10MB</p>
-            </div>
-          </label>
-
-          {file && (
-            <div className="flex items-center justify-between p-3.5 bg-blue-50 rounded-xl border border-blue-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-blue-900 truncate max-w-[200px]">{file.name}</span>
-              </div>
-              <button type="button" onClick={() => setFile(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            {replacing && (
-              <button
-                type="button"
-                onClick={() => { setReplacing(false); setFile(null); setError(null); }}
-                className="sm:w-auto px-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={!file || isLoading}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-40 font-medium text-sm"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  {uploadStatus === 'uploading' ? 'Uploading...' : 'Analysing resume...'}
-                </span>
-              ) : (
-                replacing ? 'Upload & Replace' : 'Analyse my resume'
-              )}
-            </button>
+      <form onSubmit={handleUpload}>
+        <label style={{
+          display: 'block', cursor: 'pointer',
+          border: '1.5px dashed rgba(15,23,42,0.18)',
+          borderRadius: 20,
+          padding: 'clamp(36px,6vw,56px) 32px',
+          textAlign: 'center',
+          background: file ? 'rgba(37,99,235,0.04)' : 'rgba(15,23,42,0.025)',
+          borderColor: file ? '#2563eb' : 'rgba(15,23,42,0.18)',
+          transition: 'all 0.15s ease',
+        }}>
+          <input type="file" accept=".pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+          <div style={{
+            width: 62, height: 62, borderRadius: '50%',
+            background: 'rgba(37,99,235,0.1)', color: '#2563eb',
+            display: 'grid', placeItems: 'center',
+            margin: '0 auto 20px', fontSize: 28,
+          }}>↑</div>
+          <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 20, marginBottom: 6 }}>
+            {file ? file.name : 'Drag & drop your resume'}
           </div>
-        </form>
+          <div style={{ color: '#94a3b8', fontSize: 14.5 }}>
+            {file ? `${(file.size / 1024).toFixed(0)} KB · PDF` : 'or click to browse — PDF up to 10 MB'}
+          </div>
+        </label>
+
+        {error && (
+          <div style={{
+            marginTop: 16, padding: '12px 14px', borderRadius: 11,
+            background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)',
+            fontSize: 13.5, color: '#dc2626', fontWeight: 500,
+          }}>{error}</div>
+        )}
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+          {replacing && (
+            <button
+              type="button"
+              onClick={() => { setReplacing(false); setFile(null); setError(null); }}
+              style={{
+                padding: '14px 24px', borderRadius: 12,
+                background: 'transparent', border: '1px solid rgba(15,23,42,0.12)',
+                color: '#1e293b', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15, cursor: 'pointer',
+              }}
+            >Cancel</button>
+          )}
+          <button
+            type="submit"
+            disabled={!file || isLoading}
+            style={{
+              flex: 1, minWidth: 180, padding: '15px 24px', border: 'none', borderRadius: 12,
+              background: '#2563eb', color: '#fff',
+              fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16, cursor: (!file || isLoading) ? 'default' : 'pointer',
+              boxShadow: '0 14px 34px -16px #2563eb',
+              opacity: (!file || isLoading) ? 0.5 : 1,
+            }}
+          >
+            {isLoading
+              ? (uploadStatus === 'uploading' ? 'Uploading…' : 'Analysing resume…')
+              : (replacing ? 'Upload & Replace' : 'Analyse my resume')}
+          </button>
+        </div>
+      </form>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 24 }}>
+        <span style={{ color: '#94a3b8', fontSize: 14 }}>Don't have it handy?</span>
+        <button type="button" onClick={() => navigate('/build-resume')} style={{
+          background: 'none', border: 'none', color: '#2563eb',
+          fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 14,
+          cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3,
+        }}>Make a Resume using AI</button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 32, color: '#94a3b8', fontSize: 13 }}>
+        <span style={{ color: '#059669' }}>🔒</span> Your resume is private. We never share it without your say-so.
       </div>
     </div>
   );

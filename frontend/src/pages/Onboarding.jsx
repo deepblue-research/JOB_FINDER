@@ -3,24 +3,57 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 
+const PRESET_CITIES = [
+  'Bangalore', 'Mumbai', 'Hyderabad', 'Delhi', 'Chennai', 'Pune', 'Kolkata', 'Remote',
+];
+
 const Onboarding = () => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
-    defaultValues: {
-      experience_level: 'fresher'
-    }
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: { experience_level: 'fresher' },
   });
 
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [customCityInput, setCustomCityInput] = useState('');
+  const [cityError, setCityError] = useState(false);
+  const [selectedModes, setSelectedModes] = useState([]);
+  const [modeError, setModeError] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const selectedMode = watch('work_mode');
+  const toggleCity = (city) => {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    );
+    setCityError(false);
+  };
+
+  const handleCustomCityKey = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = customCityInput.trim();
+      if (val && !selectedCities.includes(val)) {
+        setSelectedCities((prev) => [...prev, val]);
+        setCityError(false);
+      }
+      setCustomCityInput('');
+    }
+  };
 
   const onSubmit = async (data) => {
+    let valid = true;
+    if (selectedCities.length === 0) { setCityError(true); valid = false; }
+    if (selectedModes.length === 0) { setModeError(true); valid = false; }
+    if (!valid) return;
+
     setIsLoading(true);
     setError(null);
     try {
-      await client.post('/api/preferences', data);
+      await client.post('/api/preferences', {
+        ...data,
+        desired_location: selectedCities.join(', '),
+        work_mode: selectedModes.join(', '),
+      });
       navigate('/upload');
     } catch (err) {
       setError('Failed to save preferences. Please try again.');
@@ -36,81 +69,176 @@ const Onboarding = () => {
   ];
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-10 md:py-16">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-8">
-        <div className="mb-8">
-          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Step 1 of 2</span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-4">What are you looking for?</h1>
-          <p className="text-gray-500 mt-1.5 text-sm">We'll find the right jobs for you</p>
-        </div>
+    <div className="animate-fadeUp" style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(28px,5vw,56px) clamp(20px,5vw,40px)' }}>
+      <div className="card" style={{ padding: 'clamp(24px,4vw,40px)' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '6px 13px', borderRadius: 99,
+          background: 'rgba(37,99,235,0.1)',
+          fontSize: 13, fontWeight: 600, color: '#2563eb',
+          marginBottom: 18,
+        }}>Step 1 of 2</div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Desired role</label>
+        <h1 style={{
+          fontFamily: "'Space Grotesk'", fontWeight: 700,
+          fontSize: 'clamp(26px,3.4vw,34px)', letterSpacing: '-0.02em', marginBottom: 8,
+        }}>What are you looking for?</h1>
+        <p style={{ color: '#64748b', fontSize: 16, marginBottom: 32 }}>We'll find the right jobs for you.</p>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Desired role */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 8 }}>
+              Desired role
+            </label>
             <input
               type="text"
               {...register('desired_role', { required: 'Desired role is required' })}
               placeholder="e.g. Data Analyst, Software Engineer"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
+              className="input-field"
             />
-            <p className="text-xs text-gray-400 mt-1.5">Be specific — used to search for matching jobs</p>
-            {errors.desired_role && <p className="text-red-500 text-xs mt-1">{errors.desired_role.message}</p>}
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 7 }}>Be specific — used to search for matching jobs.</div>
+            {errors.desired_role && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 6, fontWeight: 500 }}>{errors.desired_role.message}</div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Preferred city</label>
+          {/* Preferred cities — chip selector */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
+              Preferred cities{' '}
+              <span style={{ fontWeight: 500, color: '#94a3b8' }}>· pick one or more</span>
+            </label>
+
+            {/* Preset city chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 11 }}>
+              {PRESET_CITIES.map((city) => {
+                const active = selectedCities.includes(city);
+                return (
+                  <button
+                    key={city}
+                    type="button"
+                    onClick={() => toggleCity(city)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 99,
+                      border: active ? '1.5px solid #2563eb' : '1.5px solid rgba(15,23,42,0.14)',
+                      background: active ? 'rgba(37,99,235,0.08)' : '#fff',
+                      color: active ? '#2563eb' : '#475569',
+                      fontFamily: "'Hanken Grotesk'",
+                      fontWeight: 600,
+                      fontSize: 13.5,
+                      cursor: 'pointer',
+                      transition: 'all 0.12s ease',
+                    }}
+                  >
+                    {active && <span style={{ marginRight: 5 }}>✓</span>}{city}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom city input */}
             <input
               type="text"
-              {...register('desired_location', { required: 'Preferred city is required' })}
-              placeholder="e.g. Bangalore, Mumbai, Hyderabad"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
+              value={customCityInput}
+              onChange={(e) => setCustomCityInput(e.target.value)}
+              onKeyDown={handleCustomCityKey}
+              placeholder="Other — type a city and press Enter"
+              className="input-field"
             />
-            {errors.desired_location && <p className="text-red-500 text-xs mt-1">{errors.desired_location.message}</p>}
+
+            {/* Show added custom cities */}
+            {selectedCities.filter(c => !PRESET_CITIES.includes(c)).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
+                {selectedCities.filter(c => !PRESET_CITIES.includes(c)).map((city) => (
+                  <span key={city} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '5px 12px', borderRadius: 99,
+                    background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)',
+                    fontSize: 13, fontWeight: 600, color: '#2563eb',
+                  }}>
+                    {city}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCities(prev => prev.filter(c => c !== city))}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {cityError && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 8, fontWeight: 500 }}>Select at least one city.</div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Work mode</label>
-            <div className="grid grid-cols-3 gap-3">
-              {workModes.map(({ value, icon, label }) => (
-                <label
-                  key={value}
-                  className={`cursor-pointer border-2 rounded-xl py-4 text-center transition-all ${
-                    selectedMode === value
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    value={value}
-                    {...register('work_mode', { required: 'Work mode is required' })}
-                    className="hidden"
-                  />
-                  <span className="block text-xl mb-1">{icon}</span>
-                  <span className="text-sm font-medium">{label}</span>
-                </label>
-              ))}
+          {/* Work mode */}
+          <div style={{ marginBottom: 30 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
+              Work mode{' '}
+              <span style={{ fontWeight: 500, color: '#94a3b8' }}>· pick one or more</span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+              {workModes.map(({ value, icon, label }) => {
+                const active = selectedModes.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModes(prev =>
+                        prev.includes(value) ? prev.filter(m => m !== value) : [...prev, value]
+                      );
+                      setModeError(false);
+                    }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 8, padding: '18px 12px',
+                      borderRadius: 14, cursor: 'pointer',
+                      border: active ? '2px solid #2563eb' : '1.5px solid rgba(15,23,42,0.12)',
+                      background: active ? 'rgba(37,99,235,0.07)' : '#fff',
+                      transition: 'all 0.12s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>{icon}</span>
+                    <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, color: active ? '#2563eb' : '#1e293b' }}>
+                      {label}
+                    </span>
+                    <span style={{ fontSize: 12, color: active ? '#2563eb' : 'transparent', fontWeight: 700 }}>✓</span>
+                  </button>
+                );
+              })}
             </div>
-            {errors.work_mode && <p className="text-red-500 text-xs mt-1.5">{errors.work_mode.message}</p>}
+            {modeError && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 8, fontWeight: 500 }}>Select at least one work mode.</div>
+            )}
           </div>
 
           <input type="hidden" {...register('experience_level')} value="fresher" />
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
+            <div style={{
+              padding: '12px 14px', borderRadius: 11, marginBottom: 16,
+              background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)',
+              fontSize: 13.5, color: '#dc2626', fontWeight: 500,
+            }}>{error}</div>
           )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 font-medium text-sm"
+            style={{
+              width: '100%', padding: 16, border: 'none', borderRadius: 12,
+              background: '#2563eb', color: '#fff',
+              fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16.5,
+              cursor: isLoading ? 'default' : 'pointer',
+              boxShadow: '0 14px 34px -16px #2563eb',
+              opacity: isLoading ? 0.6 : 1,
+            }}
           >
-            {isLoading ? 'Saving...' : 'Continue to Resume Upload →'}
+            {isLoading ? 'Saving…' : 'Continue to Resume Upload →'}
           </button>
         </form>
       </div>

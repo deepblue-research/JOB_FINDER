@@ -17,10 +17,11 @@ const Register = () => {
     try {
       const payload = {
         ...data,
-        batch_year: data.batch_year ? parseInt(data.batch_year, 10) : null
+        batch_year: data.batch_year ? parseInt(data.batch_year, 10) : null,
       };
       const response = await client.post('/auth/register', payload);
       setToken(response.data.access_token);
+      if (data.email) localStorage.setItem('jm_email', data.email);
       navigate('/onboarding');
     } catch (err) {
       if (err.response?.status === 400 && err.response?.data?.detail === 'Email already registered') {
@@ -34,101 +35,200 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+    <div style={{ minHeight: '100vh', display: 'flex', flexWrap: 'wrap' }}>
+      {/* Left panel */}
+      <div style={{
+        flex: '1 1 460px', minWidth: 300,
+        position: 'relative', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: 'clamp(32px,5vw,56px)',
+        background: 'radial-gradient(125% 95% at 12% 8%, #3b82f6 0%, #2563eb 48%, #1e40af 100%)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: '#fff', display: 'grid', placeItems: 'center',
+            color: '#2563eb', fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 19,
+          }}>J</div>
+          <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 21, letterSpacing: '-0.02em', color: '#fff' }}>
             JobMatch
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm">Your AI-powered job match platform</p>
+          </span>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Create your account</h2>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-              <input
-                type="email"
-                {...register('email', { required: 'Email is required' })}
-                placeholder="you@example.com"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1.5">{errors.email.message}</p>}
+        <div style={{ margin: 'clamp(28px,5vw,48px) 0' }}>
+          <div className="animate-floaty" style={{
+            width: '100%', maxWidth: 340,
+            background: 'rgba(255,255,255,0.13)',
+            backdropFilter: 'blur(6px)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            borderRadius: 18, padding: 20,
+            boxShadow: '0 30px 70px -30px rgba(15,30,70,0.45)',
+            transform: 'rotate(-2deg)',
+          }}>
+            <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 10 }}>
+              Three steps to your shortlist
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-              <input
-                type="password"
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 6, message: 'Password must be at least 6 characters' }
-                })}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
-              />
-              {errors.password && <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                College <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                {...register('college')}
-                placeholder="e.g. IIT Bombay"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Batch Year <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="number"
-                {...register('batch_year', {
-                  min: { value: 2020, message: 'Year must be 2020 or later' },
-                  max: { value: 2030, message: 'Year must be 2030 or earlier' }
-                })}
-                placeholder="e.g. 2025"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-400"
-              />
-              {errors.batch_year && <p className="text-red-500 text-xs mt-1.5">{errors.batch_year.message}</p>}
-            </div>
-
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <p className="text-red-600 text-sm">{error}</p>
+            {['Upload your resume', 'We read your skills', 'Apply with one click'].map((step, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{
+                  width: 24, height: 24, borderRadius: 7,
+                  background: 'rgba(255,255,255,0.2)',
+                  display: 'grid', placeItems: 'center',
+                  fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 12, color: '#fff',
+                }}>{i + 1}</div>
+                <span style={{ fontSize: 13, color: '#c7d7f5' }}>{step}</span>
               </div>
-            )}
+            ))}
+          </div>
+        </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 font-medium text-sm"
-            >
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </button>
+        <div>
+          <h2 style={{
+            fontFamily: "'Space Grotesk'", fontWeight: 700,
+            fontSize: 'clamp(24px,3vw,32px)', lineHeight: 1.12,
+            letterSpacing: '-0.02em', marginBottom: 12, color: '#fff',
+          }}>Your resume, matched to your first real job.</h2>
+          <p style={{ color: '#c7d7f5', fontSize: 15, lineHeight: 1.55, maxWidth: 380 }}>
+            Create your free account. No credit card needed.
+          </p>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div style={{
+        flex: '1 1 440px', minWidth: 300,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'clamp(32px,5vw,56px)',
+        background: '#f6f9ff',
+      }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 30 }}>
+            <span style={{ fontSize: 13.5, color: '#64748b' }}>Already have an account?</span>
+            <Link to="/login" style={{
+              padding: '9px 18px', borderRadius: 99,
+              background: '#fff', border: '1.5px solid rgba(15,23,42,0.14)',
+              color: '#1e293b', fontFamily: "'Space Grotesk'", fontWeight: 600,
+              fontSize: 12.5, letterSpacing: '0.03em', textTransform: 'uppercase',
+              textDecoration: 'none',
+            }}>Sign in</Link>
+          </div>
+
+          <h1 style={{
+            fontFamily: "'Space Grotesk'", fontWeight: 700,
+            fontSize: 'clamp(28px,3.2vw,34px)', letterSpacing: '-0.02em', marginBottom: 8,
+          }}>Create your account</h1>
+          <p style={{ color: '#64748b', fontSize: 15, marginBottom: 30 }}>Free for students and new graduates.</p>
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div>
+                <label className="label-text">Email address</label>
+                <input
+                  type="email"
+                  {...register('email', { required: 'Email is required' })}
+                  placeholder="you@example.com"
+                  className="input-field"
+                />
+                {errors.email && <div style={{ fontSize: 12.5, color: '#dc2626', marginTop: 7, fontWeight: 500 }}>{errors.email.message}</div>}
+              </div>
+
+              <div>
+                <label className="label-text">Password</label>
+                <input
+                  type="password"
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: { value: 6, message: 'At least 6 characters' },
+                  })}
+                  placeholder="Enter your password"
+                  className="input-field"
+                />
+                {errors.password && <div style={{ fontSize: 12.5, color: '#dc2626', marginTop: 7, fontWeight: 500 }}>{errors.password.message}</div>}
+              </div>
+
+              <div>
+                <label className="label-text">
+                  College <span style={{ fontWeight: 400, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  {...register('college')}
+                  placeholder="e.g. IIT Bombay"
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="label-text">
+                  Batch Year <span style={{ fontWeight: 400, color: '#94a3b8', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                </label>
+                <input
+                  type="number"
+                  {...register('batch_year', {
+                    min: { value: 2020, message: 'Year must be 2020 or later' },
+                    max: { value: 2030, message: 'Year must be 2030 or earlier' },
+                  })}
+                  placeholder="e.g. 2026"
+                  className="input-field"
+                />
+                {errors.batch_year && <div style={{ fontSize: 12.5, color: '#dc2626', marginTop: 7, fontWeight: 500 }}>{errors.batch_year.message}</div>}
+              </div>
+
+              {error && (
+                <div style={{
+                  padding: '12px 14px', borderRadius: 11,
+                  background: 'rgba(220,38,38,0.07)',
+                  border: '1px solid rgba(220,38,38,0.2)',
+                  fontSize: 13.5, color: '#dc2626', fontWeight: 500,
+                }}>{error}</div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  alignSelf: 'flex-start', marginTop: 6,
+                  padding: '15px 44px', borderRadius: 99,
+                  background: '#2563eb', color: '#fff', border: 'none',
+                  fontFamily: "'Space Grotesk'", fontWeight: 600,
+                  fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  cursor: isLoading ? 'default' : 'pointer',
+                  boxShadow: '0 14px 30px -12px rgba(37,99,235,0.5)',
+                  opacity: isLoading ? 0.6 : 1,
+                }}
+              >
+                {isLoading ? 'Creating…' : 'Create account'}
+              </button>
+            </div>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm">
-            <span className="text-gray-500">Already have an account? </span>
-            <Link to="/login" className="text-blue-600 font-medium hover:text-blue-700">
-              Sign in
-            </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '28px 0 20px' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(15,23,42,0.1)' }} />
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>or continue with</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(15,23,42,0.1)' }} />
           </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+              padding: 11, borderRadius: 11,
+              background: '#fff', color: '#1e293b', border: '1px solid rgba(15,23,42,0.14)',
+              fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            }}>
+              <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, color: '#4285F4' }}>G</span> Google
+            </button>
+            <button type="button" style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+              padding: 11, borderRadius: 11,
+              background: '#fff', color: '#1e293b', border: '1px solid rgba(15,23,42,0.14)',
+              fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            }}>
+              <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, color: '#1877F2' }}>f</span> Facebook
+            </button>
+          </div>
+
+          <p style={{ marginTop: 26, fontSize: 12.5, color: '#94a3b8', lineHeight: 1.5 }}>
+            By continuing you agree to JobMatch's Terms &amp; Privacy Policy.
+          </p>
         </div>
       </div>
     </div>
