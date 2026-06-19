@@ -4,26 +4,24 @@ import client from '../api/client';
 import useJobStore from '../store/jobStore';
 import { useToastStore } from '../store/toastStore';
 
-const JobDetail = () => {
-  const cleanLocation = (loc) => {
-    if (!loc) return 'India'
-    return loc
-        .split(',')
-        .map(p => p.trim())
-        .filter(p => 
-            p && 
-            p !== 'undefined' && 
-            p !== 'null' && 
-            p !== 'None' && 
-            p !== 'N/A' &&
-            p !== 'undefined'
-        )
-        .join(', ') || 'India'
-  }
+const cleanLocation = (loc) => {
+  if (!loc) return 'India';
+  return loc.split(',').map(p => p.trim())
+    .filter(p => p && !['undefined', 'null', 'None', 'N/A'].includes(p))
+    .join(', ') || 'India';
+};
 
+const getMatchColor = (score) => {
+  if (score >= 80) return '#059669';
+  if (score >= 60) return '#2563eb';
+  if (score >= 40) return '#d97706';
+  return '#94a3b8';
+};
+
+const JobDetail = () => {
   const params = useParams();
   const jobHash = params.job_hash || params.job_id;
-  
+
   const skillGaps = useJobStore((state) => state.skillGaps);
   const setSkillGap = useJobStore((state) => state.setSkillGap);
   const showToast = useToastStore((state) => state.showToast);
@@ -31,19 +29,18 @@ const JobDetail = () => {
   const [job, setJob] = useState(null);
   const [jobLoading, setJobLoading] = useState(true);
   const [jobError, setJobError] = useState(null);
-
-  const [analysisState, setAnalysisState] = useState('initial'); // 'initial', 'loading', 'result', 'error'
+  const [analysisState, setAnalysisState] = useState('initial');
   const [analysisResult, setAnalysisResult] = useState(null);
-  
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
-  const loadingTexts = [
-    "Reading your resume...",
-    "Analysing job requirements...",
-    "Finding your skill gaps...",
-    "Generating course recommendations..."
-  ];
-
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [applied, setApplied] = useState(false);
+
+  const loadingTexts = [
+    'Reading your resume…',
+    'Analysing job requirements…',
+    'Finding your skill gaps…',
+    'Generating course recommendations…',
+  ];
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -53,14 +50,12 @@ const JobDetail = () => {
         setJob(res.data);
       } catch (err) {
         setJobError("Couldn't load job details.");
-        showToast("Failed to load job details.", "error");
+        showToast('Failed to load job details.', 'error');
       } finally {
         setJobLoading(false);
       }
     };
-    if (jobHash) {
-      fetchJob();
-    }
+    if (jobHash) fetchJob();
   }, [jobHash, showToast]);
 
   useEffect(() => {
@@ -73,9 +68,7 @@ const JobDetail = () => {
   useEffect(() => {
     let interval;
     if (analysisState === 'loading') {
-      interval = setInterval(() => {
-        setLoadingTextIndex((prev) => (prev + 1) % loadingTexts.length);
-      }, 2000);
+      interval = setInterval(() => setLoadingTextIndex((p) => (p + 1) % loadingTexts.length), 2000);
     }
     return () => clearInterval(interval);
   }, [analysisState, loadingTexts.length]);
@@ -87,49 +80,51 @@ const JobDetail = () => {
       setLoadingTextIndex(0);
       const res = await client.post('/api/skill-gap/analyze', {
         job_hash: jobHash,
-        job_description: job?.job_description || job?.description || ''
+        job_description: job?.job_description || job?.description || '',
       });
       setAnalysisResult(res.data);
       setSkillGap(jobHash, res.data);
       setAnalysisState('result');
     } catch (err) {
-      console.error('Analysis error:', err);
       setAnalysisState('error');
-      showToast("Error generating skill gap analysis.", "error");
+      showToast('Error generating skill gap analysis.', 'error');
     }
   };
 
   const handleFeedback = async (rating) => {
     try {
-      await client.post('/api/feedback', null, {
-        params: { job_id: jobHash, rating }
-      });
+      await client.post('/api/feedback', null, { params: { job_id: jobHash, rating } });
       setFeedbackGiven(true);
       setTimeout(() => setFeedbackGiven(false), 3000);
     } catch (err) {
-      console.error('Feedback failed', err);
-      showToast("Error submitting feedback.", "error");
+      showToast('Error submitting feedback.', 'error');
     }
   };
 
   if (jobLoading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
-        <p className="text-gray-600 font-medium">Loading job details...</p>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 280, flexDirection: 'column', gap: 16 }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%',
+          border: '4px solid rgba(15,23,42,0.08)', borderTopColor: '#2563eb',
+          animation: 'spin 0.9s linear infinite',
+        }} />
+        <p style={{ color: '#64748b', fontSize: 14, fontWeight: 500 }}>Loading job details…</p>
       </div>
     );
   }
 
   if (jobError) {
     return (
-      <div className="max-w-xl mx-auto px-4 md:px-8 py-12 text-center">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-6">{jobError}</p>
-          <Link to="/jobs" className="bg-blue-600 text-white px-6 py-2 min-h-[44px] flex items-center justify-center rounded-lg font-medium hover:bg-blue-700">
-            Back to Jobs
-          </Link>
+      <div style={{ maxWidth: 560, margin: '60px auto', padding: '0 20px', textAlign: 'center' }}>
+        <div className="card" style={{ padding: 40 }}>
+          <h2 style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 22, marginBottom: 10 }}>Error</h2>
+          <p style={{ color: '#64748b', fontSize: 14.5, marginBottom: 24 }}>{jobError}</p>
+          <Link to="/jobs" style={{
+            display: 'inline-flex', padding: '13px 24px', borderRadius: 12,
+            background: '#2563eb', color: '#fff', textDecoration: 'none',
+            fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15,
+          }}>← Back to Jobs</Link>
         </div>
       </div>
     );
@@ -137,204 +132,334 @@ const JobDetail = () => {
 
   if (!job) return null;
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
-      <div className="flex flex-col md:flex-row md:gap-6">
-        
-        {/* LEFT COLUMN */}
-        <div className="md:w-3/5">
-          <Link to="/jobs" className="text-blue-600 hover:text-blue-500 font-medium mb-4 inline-flex items-center min-h-[44px]">
-            &larr; Back to Jobs
-          </Link>
-          <div className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-1">
-            {job.employer_name || job.company}
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{job.job_title}</h1>
-          
-          <div className="flex flex-wrap gap-2 mb-6">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              📍 {cleanLocation([job.job_city, job.job_state, job.job_country].filter(Boolean).join(', '))}
-            </span>
-            {job.job_employment_type && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                {job.job_employment_type}
-              </span>
-            )}
-          </div>
+  // Applied confirmation screen
+  if (applied) {
+    return (
+      <div className="animate-fadeUp" style={{
+        maxWidth: 560, margin: '0 auto',
+        padding: 'clamp(50px,8vw,96px) clamp(20px,5vw,40px)',
+        textAlign: 'center',
+      }}>
+        <div className="animate-pop" style={{
+          width: 84, height: 84, margin: '0 auto 26px',
+          borderRadius: '50%',
+          background: 'rgba(5,150,105,0.12)',
+          border: '1px solid rgba(5,150,105,0.3)',
+          display: 'grid', placeItems: 'center',
+          fontSize: 38, color: '#059669',
+        }}>✓</div>
 
-          <a 
-            href={job.job_apply_link || '#'} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className={`inline-flex items-center justify-center px-6 py-3 min-h-[44px] rounded-lg font-medium transition-colors mb-8 ${job.job_apply_link ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'}`}
-          >
-            Apply Now &rarr;
-          </a>
+        <h1 style={{
+          fontFamily: "'Space Grotesk'", fontWeight: 700,
+          fontSize: 'clamp(26px,3.6vw,34px)', letterSpacing: '-0.02em', marginBottom: 12,
+        }}>Application sent!</h1>
+        <p style={{ color: '#475569', fontSize: 16.5, lineHeight: 1.55, marginBottom: 32 }}>
+          Your resume is on its way to{' '}
+          <strong style={{ color: '#1e293b' }}>{job.employer_name || job.company}</strong> for the{' '}
+          <strong style={{ color: '#1e293b' }}>{job.job_title}</strong> role.
+        </p>
 
-          <div 
-            className="text-gray-700 leading-relaxed max-h-96 overflow-y-auto"
-            dangerouslySetInnerHTML={{ __html: job?.job_description || job?.description || '' }}
-          />
+        <div className="card" style={{ padding: 22, textAlign: 'left', marginBottom: 28 }}>
+          <div className="section-label" style={{ marginBottom: 14 }}>What happens next</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {[
+              "You'll get a confirmation email within a few minutes.",
+              'Most teams here respond to new grads within 5 business days.',
+              "We'll keep surfacing similar roles while you wait.",
+            ].map((text, i) => (
+              <div key={i} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                <span style={{ color: '#2563eb', fontSize: 16, flexShrink: 0 }}>›</span>
+                <span style={{ color: '#475569', fontSize: 14.5, lineHeight: 1.5 }}>{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="md:w-2/5 mt-8 md:mt-0 sticky top-4 self-start">
-          <div className="bg-white border rounded-xl shadow-sm p-6 max-h-[calc(100vh-2rem)] overflow-y-auto">
-            
-            {analysisState === 'initial' && (
-              <div className="text-center py-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Skill Gap Analysis</h2>
-                <p className="text-gray-600 mb-6 text-sm">Find out exactly what skills you're missing for this role and get personalized course recommendations to bridge the gap.</p>
-                <button 
-                  onClick={handleAnalyse}
-                  className="bg-blue-600 text-white px-6 py-3 min-h-[44px] rounded-lg font-medium hover:bg-blue-700 transition-colors w-full flex items-center justify-center"
-                >
-                  Analyse My Gaps
-                </button>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link to="/jobs" style={{
+            padding: '14px 24px', borderRadius: 12, border: 'none',
+            background: '#2563eb', color: '#fff', textDecoration: 'none',
+            fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15,
+          }}>Back to my matches</Link>
+          <Link to="/jobs" style={{
+            padding: '14px 24px', borderRadius: 12,
+            background: 'transparent', border: '1px solid rgba(15,23,42,0.12)',
+            color: '#1e293b', textDecoration: 'none',
+            fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15,
+          }}>Done</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const score = job.match_score ? Math.round(job.match_score) : 0;
+  const matchColor = getMatchColor(score);
+  const location = cleanLocation([job.job_city, job.job_state, job.job_country].filter(Boolean).join(', '));
+
+  return (
+    <div className="animate-fadeUp" style={{ maxWidth: 820, margin: '0 auto', padding: 'clamp(24px,4vw,40px) clamp(20px,5vw,40px)' }}>
+      {/* Back */}
+      <Link
+        to="/jobs"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          background: 'none', border: 'none', color: '#64748b',
+          fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 14,
+          textDecoration: 'none', marginBottom: 24,
+        }}
+      >
+        <span style={{ fontSize: 17 }}>←</span> Back to matches
+      </Link>
+
+      <div className="card" style={{ padding: 'clamp(22px,4vw,32px)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 24 }}>
+          {score > 0 && (
+            <div style={{
+              width: 58, height: 58, borderRadius: '50%', flexShrink: 0,
+              display: 'grid', placeItems: 'center',
+              background: `conic-gradient(${matchColor} ${score}%, rgba(15,23,42,0.08) 0)`,
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: '50%', background: '#fff',
+                display: 'grid', placeItems: 'center',
+                fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 13.5, color: matchColor,
+              }}>{score}%</div>
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <h1 style={{
+              fontFamily: "'Space Grotesk'", fontWeight: 700,
+              fontSize: 'clamp(22px,3vw,28px)', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 6,
+            }}>{job.job_title}</h1>
+            <div style={{ fontSize: 14.5, color: '#64748b', marginBottom: 6 }}>
+              {job.employer_name || job.company} · {location}
+              {job.job_employment_type && ` · ${job.job_employment_type}`}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => {
+              if (job.job_apply_link) window.open(job.job_apply_link, '_blank', 'noopener,noreferrer');
+              setApplied(true);
+            }}
+            disabled={!job.job_apply_link}
+            style={{
+              flex: 1, minWidth: 180, padding: '15px 24px', border: 'none', borderRadius: 12,
+              background: job.job_apply_link ? '#2563eb' : '#e2e8f0',
+              color: job.job_apply_link ? '#fff' : '#94a3b8',
+              fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16,
+              cursor: job.job_apply_link ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Apply Now →
+          </button>
+          <button
+            onClick={handleAnalyse}
+            disabled={analysisState === 'loading'}
+            style={{
+              padding: '15px 24px', borderRadius: 12,
+              background: 'transparent', border: '1.5px solid #2563eb',
+              color: '#2563eb', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15,
+              cursor: analysisState === 'loading' ? 'default' : 'pointer',
+              opacity: analysisState === 'loading' ? 0.5 : 1,
+            }}
+          >
+            Skill Gap
+          </button>
+        </div>
+
+        <div style={{ height: 1, background: 'rgba(15,23,42,0.07)', marginBottom: 24 }} />
+
+        {/* Skill gap panel */}
+        {analysisState === 'initial' && (
+          <div style={{
+            background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.15)',
+            borderRadius: 14, padding: 24, marginBottom: 24, textAlign: 'center',
+          }}>
+            <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Skill Gap Analysis</div>
+            <p style={{ color: '#64748b', fontSize: 14, marginBottom: 18 }}>
+              Find exactly what skills you're missing and get course recommendations to bridge the gap.
+            </p>
+            <button
+              onClick={handleAnalyse}
+              style={{
+                padding: '12px 28px', borderRadius: 12, border: 'none',
+                background: '#2563eb', color: '#fff',
+                fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 14.5, cursor: 'pointer',
+              }}
+            >Analyse My Gaps</button>
+          </div>
+        )}
+
+        {analysisState === 'loading' && (
+          <div style={{
+            padding: '32px 24px', textAlign: 'center', marginBottom: 24,
+            background: 'rgba(15,23,42,0.02)', borderRadius: 14,
+          }}>
+            <div style={{
+              width: 44, height: 44, margin: '0 auto 16px',
+              borderRadius: '50%', border: '4px solid rgba(15,23,42,0.08)',
+              borderTopColor: '#2563eb', animation: 'spin 0.9s linear infinite',
+            }} />
+            <p style={{ color: '#64748b', fontSize: 14, fontWeight: 500 }}>{loadingTexts[loadingTextIndex]}</p>
+          </div>
+        )}
+
+        {analysisState === 'error' && (
+          <div style={{
+            padding: 24, textAlign: 'center', marginBottom: 24,
+            background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.15)',
+            borderRadius: 14,
+          }}>
+            <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Analysis failed</div>
+            <button onClick={handleAnalyse} style={{
+              padding: '12px 24px', borderRadius: 12, border: 'none',
+              background: '#dc2626', color: '#fff',
+              fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            }}>Try Again</button>
+          </div>
+        )}
+
+        {analysisState === 'result' && analysisResult && (() => {
+          const fitScore = analysisResult.fit_score || 0;
+          const fitColor = fitScore > 70 ? '#059669' : fitScore >= 40 ? '#d97706' : '#dc2626';
+          const fitLabel = fitScore > 70 ? 'Strong match' : fitScore >= 40 ? 'Good potential' : 'Skill gap';
+
+          return (
+            <div style={{
+              background: 'rgba(15,23,42,0.02)', border: '1px solid rgba(15,23,42,0.07)',
+              borderRadius: 14, padding: 24, marginBottom: 24,
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid rgba(15,23,42,0.07)' }}>
+                <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 48, color: fitColor }}>{fitScore}%</span>
+                <span style={{ color: '#94a3b8', marginLeft: 8, fontSize: 14, fontWeight: 500 }}>fit</span>
+                <div style={{ marginTop: 8 }}>
+                  <span style={{
+                    display: 'inline-block', padding: '5px 14px', borderRadius: 99,
+                    background: `${fitColor}15`, border: `1px solid ${fitColor}40`,
+                    fontSize: 12.5, fontWeight: 600, color: fitColor,
+                  }}>{fitLabel}</span>
+                </div>
               </div>
-            )}
 
-            {analysisState === 'loading' && (
-              <div className="text-center py-10">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p className="text-gray-600 font-medium animate-pulse">{loadingTexts[loadingTextIndex]}</p>
-              </div>
-            )}
-
-            {analysisState === 'error' && (
-              <div className="text-center py-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Couldn't analyse</h2>
-                <p className="text-gray-600 mb-6 text-sm">There was an error generating the skill gap analysis.</p>
-                <button 
-                  onClick={handleAnalyse}
-                  className="bg-red-600 text-white px-6 py-2 min-h-[44px] rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center w-full"
-                >
-                  Try Again
-                </button>
-              </div>
-            )}
-
-            {analysisState === 'result' && analysisResult && (
-              <div>
-                {/* Score Banner */}
-                {(() => {
-                  const score = analysisResult.fit_score || 0;
-                  let colorClass = 'text-red-500';
-                  let bannerClass = 'bg-red-50 border-red-200 text-red-700';
-                  let bannerText = 'Skill gap';
-                  
-                  if (score > 70) {
-                    colorClass = 'text-green-500';
-                    bannerClass = 'bg-green-50 border-green-200 text-green-700';
-                    bannerText = 'Strong match';
-                  } else if (score >= 40) {
-                    colorClass = 'text-amber-500';
-                    bannerClass = 'bg-amber-50 border-amber-200 text-amber-700';
-                    bannerText = 'Good potential';
-                  }
-
-                  return (
-                    <div className="text-center mb-6">
-                      <div className="mb-2">
-                        <span className={`text-5xl font-black ${colorClass}`}>{score}%</span>
-                        <span className="text-gray-500 ml-2 font-medium">Fit</span>
-                      </div>
-                      <div className={`inline-block px-4 py-1 rounded-full border text-sm font-semibold ${bannerClass}`}>
-                        {bannerText}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* You already have */}
-                {analysisResult.present_skills && analysisResult.present_skills.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">✅ You already have</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {analysisResult.present_skills.map((skill, idx) => (
-                        <span key={idx} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+              {analysisResult.present_skills?.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div className="section-label" style={{ marginBottom: 10 }}>You already have</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                    {analysisResult.present_skills.map((skill, i) => (
+                      <span key={i} className="skill-tag">✓ {skill}</span>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* You are missing */}
-                {analysisResult.missing_skills && analysisResult.missing_skills.length > 0 ? (
-                  <div className="mb-6">
-                    <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">❌ You are missing</h3>
-                    <div className="space-y-4">
-                      {analysisResult.missing_skills.map((gap, idx) => (
-                        <div key={idx} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-bold text-gray-900">{gap.skill}</span>
-                            {gap.importance && (
-                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium">
-                                {gap.importance}
-                              </span>
-                            )}
-                          </div>
-                          {gap.why_needed && (
-                            <p className="text-sm text-gray-600 italic mb-3">{gap.why_needed}</p>
-                          )}
-                          {gap.course_recommendations && gap.course_recommendations.length > 0 ? (
-                            <div className="space-y-2 mt-2">
-                              {gap.course_recommendations.map((course, cIdx) => (
-                                <a 
-                                  key={cIdx} 
-                                  href={course.url || `https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="block bg-white border border-blue-100 p-2 min-h-[44px] rounded hover:border-blue-300 transition-colors"
-                                >
-                                  <div className="text-xs text-gray-500 font-medium">{course.platform || 'Course'}</div>
-                                  <div className="text-sm text-blue-600 font-semibold">{course.title || 'Recommended Course'}</div>
-                                </a>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="mt-2">
-                              <a 
-                                href={`https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block bg-white border border-blue-100 p-2 min-h-[44px] rounded hover:border-blue-300 transition-colors"
-                              >
-                                <div className="text-xs text-gray-500 font-medium">Coursera</div>
-                                <div className="text-sm text-blue-600 font-semibold">Search for courses on {gap.skill}</div>
-                              </a>
-                            </div>
+              {analysisResult.missing_skills?.length > 0 ? (
+                <div style={{ marginBottom: 16 }}>
+                  <div className="section-label" style={{ marginBottom: 10 }}>Skills to learn</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {analysisResult.missing_skills.map((gap, i) => (
+                      <div key={i} style={{
+                        border: '1px solid rgba(15,23,42,0.07)', borderRadius: 12, padding: 14,
+                        background: '#fff',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                          <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{gap.skill}</span>
+                          {gap.importance && (
+                            <span style={{
+                              fontSize: 11.5, background: 'rgba(15,23,42,0.05)',
+                              border: '1px solid rgba(15,23,42,0.1)', color: '#64748b',
+                              padding: '3px 9px', borderRadius: 6, fontWeight: 500,
+                            }}>{gap.importance}</span>
                           )}
                         </div>
-                      ))}
-                    </div>
+                        {gap.why_needed && (
+                          <p style={{ fontSize: 12.5, color: '#64748b', fontStyle: 'italic', marginBottom: 10 }}>{gap.why_needed}</p>
+                        )}
+                        {gap.course_recommendations?.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {gap.course_recommendations.map((course, ci) => (
+                              <a
+                                key={ci}
+                                href={course.url || `https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
+                                target="_blank" rel="noopener noreferrer"
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  padding: '10px 12px', borderRadius: 9,
+                                  background: 'rgba(37,99,235,0.04)', border: '1px solid rgba(37,99,235,0.1)',
+                                  textDecoration: 'none', transition: 'background 0.1s',
+                                }}
+                              >
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11.5, color: '#94a3b8', fontWeight: 500 }}>{course.platform || 'Course'}</div>
+                                  <div style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600 }}>{course.title || 'Recommended Course'}</div>
+                                </div>
+                                <span style={{ color: '#94a3b8', fontSize: 14 }}>↗</span>
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <a
+                            href={`https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '10px 12px', borderRadius: 9,
+                              background: 'rgba(37,99,235,0.04)', border: '1px solid rgba(37,99,235,0.1)',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11.5, color: '#94a3b8' }}>Coursera</div>
+                              <div style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 600 }}>Search courses on {gap.skill}</div>
+                            </div>
+                            <span style={{ color: '#94a3b8' }}>↗</span>
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <span className="text-2xl mb-2 block">🎉</span>
-                    <h3 className="font-bold text-green-800">You meet all requirements!</h3>
-                    <p className="text-green-600 text-sm mt-1">Your resume is a perfect match for this role.</p>
-                  </div>
-                )}
-
-                {/* Feedback */}
-                <div className="mt-8 border-t pt-4 text-center">
-                  <p className="text-sm text-gray-600 font-medium mb-3">Was this helpful?</p>
-                  <div className="flex justify-center gap-4">
-                    <button onClick={() => handleFeedback(1)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">👎</button>
-                    <button onClick={() => handleFeedback(3)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">😐</button>
-                    <button onClick={() => handleFeedback(5)} className="text-2xl min-h-[44px] min-w-[44px] hover:scale-110 transition-transform">👍</button>
-                  </div>
-                  {feedbackGiven && (
-                    <p className="text-green-600 text-sm font-medium mt-2 animate-pulse">Thanks for your feedback!</p>
-                  )}
                 </div>
+              ) : (
+                <div style={{
+                  background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)',
+                  borderRadius: 12, padding: 18, textAlign: 'center', marginBottom: 16,
+                }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🎉</div>
+                  <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, color: '#059669', marginBottom: 4 }}>
+                    You meet all requirements!
+                  </div>
+                  <p style={{ color: '#047857', fontSize: 13 }}>Your resume is a great match for this role.</p>
+                </div>
+              )}
 
+              <div style={{ paddingTop: 16, borderTop: '1px solid rgba(15,23,42,0.07)', textAlign: 'center' }}>
+                <p style={{ fontSize: 12.5, color: '#94a3b8', fontWeight: 500, marginBottom: 10 }}>Was this helpful?</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                  {[['👎', 1], ['😐', 3], ['👍', 5]].map(([emoji, rating]) => (
+                    <button key={rating} onClick={() => handleFeedback(rating)}
+                      style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}>
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                {feedbackGiven && (
+                  <p style={{ color: '#059669', fontSize: 12.5, fontWeight: 500, marginTop: 6 }}>Thanks for your feedback!</p>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          );
+        })()}
+
+        {/* Job description */}
+        <h3 style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 17, marginBottom: 12 }}>About the role</h3>
+        <div
+          style={{ color: '#475569', fontSize: 15, lineHeight: 1.65, maxHeight: 400, overflowY: 'auto', paddingRight: 8 }}
+          dangerouslySetInnerHTML={{ __html: job?.job_description || job?.description || '' }}
+        />
       </div>
     </div>
   );

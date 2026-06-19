@@ -3,24 +3,57 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 
+const PRESET_CITIES = [
+  'Bangalore', 'Mumbai', 'Hyderabad', 'Delhi', 'Chennai', 'Pune', 'Kolkata', 'Remote',
+];
+
 const Onboarding = () => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
-    defaultValues: {
-      experience_level: 'fresher'
-    }
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: { experience_level: 'fresher' },
   });
-  
+
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [customCityInput, setCustomCityInput] = useState('');
+  const [cityError, setCityError] = useState(false);
+  const [selectedModes, setSelectedModes] = useState([]);
+  const [modeError, setModeError] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  
-  const selectedMode = watch('work_mode');
+
+  const toggleCity = (city) => {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    );
+    setCityError(false);
+  };
+
+  const handleCustomCityKey = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = customCityInput.trim();
+      if (val && !selectedCities.includes(val)) {
+        setSelectedCities((prev) => [...prev, val]);
+        setCityError(false);
+      }
+      setCustomCityInput('');
+    }
+  };
 
   const onSubmit = async (data) => {
+    let valid = true;
+    if (selectedCities.length === 0) { setCityError(true); valid = false; }
+    if (selectedModes.length === 0) { setModeError(true); valid = false; }
+    if (!valid) return;
+
     setIsLoading(true);
     setError(null);
     try {
-      await client.post('/api/preferences', data);
+      await client.post('/api/preferences', {
+        ...data,
+        desired_location: selectedCities.join(', '),
+        work_mode: selectedModes.join(', '),
+      });
       navigate('/upload');
     } catch (err) {
       setError('Failed to save preferences. Please try again.');
@@ -29,72 +62,186 @@ const Onboarding = () => {
     }
   };
 
+  const workModes = [
+    { value: 'Remote', icon: '🌐', label: 'Remote' },
+    { value: 'On-site', icon: '🏢', label: 'On-site' },
+    { value: 'Hybrid', icon: '⚡', label: 'Hybrid' },
+  ];
+
   return (
-    <div className="max-w-xl mx-auto mt-20 bg-white rounded-xl border shadow-sm p-8">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Tell us what you're looking for</h1>
-        <p className="text-gray-500 mt-2">We'll find the right jobs for you</p>
-      </div>
+    <div className="animate-fadeUp" style={{ maxWidth: 680, margin: '0 auto', padding: 'clamp(28px,5vw,56px) clamp(20px,5vw,40px)' }}>
+      <div className="card" style={{ padding: 'clamp(24px,4vw,40px)' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '6px 13px', borderRadius: 99,
+          background: 'rgba(37,99,235,0.1)',
+          fontSize: 13, fontWeight: 600, color: '#2563eb',
+          marginBottom: 18,
+        }}>Step 1 of 2</div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">What role are you looking for?</label>
-          <input
-            type="text"
-            {...register('desired_role', { required: 'Desired role is required' })}
-            placeholder="e.g. Data Analyst, Software Engineer, Frontend Developer"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Be specific — used to search LinkedIn and Indeed</p>
-          {errors.desired_role && <p className="text-red-500 text-sm mt-1">{errors.desired_role.message}</p>}
-        </div>
+        <h1 style={{
+          fontFamily: "'Space Grotesk'", fontWeight: 700,
+          fontSize: 'clamp(26px,3.4vw,34px)', letterSpacing: '-0.02em', marginBottom: 8,
+        }}>What are you looking for?</h1>
+        <p style={{ color: '#64748b', fontSize: 16, marginBottom: 32 }}>We'll find the right jobs for you.</p>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred city</label>
-          <input
-            type="text"
-            {...register('desired_location', { required: 'Preferred city is required' })}
-            placeholder="e.g. Bangalore, Mumbai, Hyderabad"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {errors.desired_location && <p className="text-red-500 text-sm mt-1">{errors.desired_location.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Work Mode</label>
-          <div className="grid grid-cols-3 gap-4">
-            {['Remote', 'On-site', 'Hybrid'].map((mode) => (
-              <label 
-                key={mode} 
-                className={`cursor-pointer border rounded-lg py-3 text-center transition-colors ${
-                  selectedMode === mode ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <input 
-                  type="radio" 
-                  value={mode} 
-                  {...register('work_mode', { required: 'Work mode is required' })} 
-                  className="hidden" 
-                />
-                <span className="font-medium">{mode}</span>
-              </label>
-            ))}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Desired role */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 8 }}>
+              Desired role
+            </label>
+            <input
+              type="text"
+              {...register('desired_role', { required: 'Desired role is required' })}
+              placeholder="e.g. Data Analyst, Software Engineer"
+              className="input-field"
+            />
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 7 }}>Be specific — used to search for matching jobs.</div>
+            {errors.desired_role && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 6, fontWeight: 500 }}>{errors.desired_role.message}</div>
+            )}
           </div>
-          {errors.work_mode && <p className="text-red-500 text-sm mt-1">{errors.work_mode.message}</p>}
-        </div>
 
-        <input type="hidden" {...register('experience_level')} value="fresher" />
+          {/* Preferred cities — chip selector */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
+              Preferred cities{' '}
+              <span style={{ fontWeight: 500, color: '#94a3b8' }}>· pick one or more</span>
+            </label>
 
-        {error && <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm text-center">{error}</div>}
+            {/* Preset city chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 11 }}>
+              {PRESET_CITIES.map((city) => {
+                const active = selectedCities.includes(city);
+                return (
+                  <button
+                    key={city}
+                    type="button"
+                    onClick={() => toggleCity(city)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 99,
+                      border: active ? '1.5px solid #2563eb' : '1.5px solid rgba(15,23,42,0.14)',
+                      background: active ? 'rgba(37,99,235,0.08)' : '#fff',
+                      color: active ? '#2563eb' : '#475569',
+                      fontFamily: "'Hanken Grotesk'",
+                      fontWeight: 600,
+                      fontSize: 13.5,
+                      cursor: 'pointer',
+                      transition: 'all 0.12s ease',
+                    }}
+                  >
+                    {active && <span style={{ marginRight: 5 }}>✓</span>}{city}
+                  </button>
+                );
+              })}
+            </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
-        >
-          {isLoading ? 'Saving...' : 'Find My Jobs →'}
-        </button>
-      </form>
+            {/* Custom city input */}
+            <input
+              type="text"
+              value={customCityInput}
+              onChange={(e) => setCustomCityInput(e.target.value)}
+              onKeyDown={handleCustomCityKey}
+              placeholder="Other — type a city and press Enter"
+              className="input-field"
+            />
+
+            {/* Show added custom cities */}
+            {selectedCities.filter(c => !PRESET_CITIES.includes(c)).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
+                {selectedCities.filter(c => !PRESET_CITIES.includes(c)).map((city) => (
+                  <span key={city} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '5px 12px', borderRadius: 99,
+                    background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)',
+                    fontSize: 13, fontWeight: 600, color: '#2563eb',
+                  }}>
+                    {city}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCities(prev => prev.filter(c => c !== city))}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {cityError && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 8, fontWeight: 500 }}>Select at least one city.</div>
+            )}
+          </div>
+
+          {/* Work mode */}
+          <div style={{ marginBottom: 30 }}>
+            <label style={{ display: 'block', fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, marginBottom: 10 }}>
+              Work mode{' '}
+              <span style={{ fontWeight: 500, color: '#94a3b8' }}>· pick one or more</span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+              {workModes.map(({ value, icon, label }) => {
+                const active = selectedModes.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModes(prev =>
+                        prev.includes(value) ? prev.filter(m => m !== value) : [...prev, value]
+                      );
+                      setModeError(false);
+                    }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 8, padding: '18px 12px',
+                      borderRadius: 14, cursor: 'pointer',
+                      border: active ? '2px solid #2563eb' : '1.5px solid rgba(15,23,42,0.12)',
+                      background: active ? 'rgba(37,99,235,0.07)' : '#fff',
+                      transition: 'all 0.12s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>{icon}</span>
+                    <span style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 15, color: active ? '#2563eb' : '#1e293b' }}>
+                      {label}
+                    </span>
+                    <span style={{ fontSize: 12, color: active ? '#2563eb' : 'transparent', fontWeight: 700 }}>✓</span>
+                  </button>
+                );
+              })}
+            </div>
+            {modeError && (
+              <div style={{ fontSize: 13, color: '#dc2626', marginTop: 8, fontWeight: 500 }}>Select at least one work mode.</div>
+            )}
+          </div>
+
+          <input type="hidden" {...register('experience_level')} value="fresher" />
+
+          {error && (
+            <div style={{
+              padding: '12px 14px', borderRadius: 11, marginBottom: 16,
+              background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)',
+              fontSize: 13.5, color: '#dc2626', fontWeight: 500,
+            }}>{error}</div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              width: '100%', padding: 16, border: 'none', borderRadius: 12,
+              background: '#2563eb', color: '#fff',
+              fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 16.5,
+              cursor: isLoading ? 'default' : 'pointer',
+              boxShadow: '0 14px 34px -16px #2563eb',
+              opacity: isLoading ? 0.6 : 1,
+            }}
+          >
+            {isLoading ? 'Saving…' : 'Continue to Resume Upload →'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

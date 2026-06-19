@@ -12,48 +12,55 @@ import ResumeUpload from './pages/ResumeUpload';
 import JobResults from './pages/JobResults';
 import JobDetail from './pages/JobDetail';
 import Profile from './pages/Profile';
+import ResumeBuilder from './pages/ResumeBuilder';
+import Landing from './pages/Landing';
+import Home from './pages/Home';
 
 function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <Onboarding />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/upload" element={
-            <ProtectedRoute>
-              <ResumeUpload />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/jobs" element={
-            <ProtectedRoute>
-              <JobResults />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/jobs/:job_id" element={
-            <ProtectedRoute>
-              <JobDetail />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        </Routes>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          {/* Animated background blobs */}
+          <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+            <div className="blob-1" />
+            <div className="blob-2" />
+          </div>
+
+          {/* App content */}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <Navbar />
+            <main style={{ flex: 1 }}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                <Route path="/onboarding" element={
+                  <ProtectedRoute><Onboarding /></ProtectedRoute>
+                } />
+                <Route path="/upload" element={
+                  <ProtectedRoute><ResumeUpload /></ProtectedRoute>
+                } />
+                <Route path="/jobs" element={
+                  <ProtectedRoute><JobResults /></ProtectedRoute>
+                } />
+                <Route path="/jobs/:job_id" element={
+                  <ProtectedRoute><JobDetail /></ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute><Profile /></ProtectedRoute>
+                } />
+                <Route path="/build-resume" element={
+                  <ProtectedRoute><ResumeBuilder /></ProtectedRoute>
+                } />
+                <Route path="/home" element={
+                  <ProtectedRoute><Home /></ProtectedRoute>
+                } />
+                <Route path="/" element={<Landing />} />
+              </Routes>
+            </main>
+          </div>
+        </div>
         <Toast />
       </BrowserRouter>
     </ErrorBoundary>
