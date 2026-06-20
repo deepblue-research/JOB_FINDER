@@ -20,9 +20,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/jobmatch
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: supersecretkey123
+      SECRET_KEY: ${SECRET_KEY}
     env_file:
       - .env
     depends_on:
@@ -31,15 +31,31 @@ services:
     volumes:
       - ./backend:/app
 
+  enrichment:
+    build:
+      context: ./backend/enrichment
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/enrichment/.env
+    volumes:
+      - ./backend/enrichment:/app
+      - ./backend/enrichment/outputs:/app/outputs
+
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_ENRICHMENT_URL=http://localhost:8080
+    depends_on:
+      - backend
+      - enrichment
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:
