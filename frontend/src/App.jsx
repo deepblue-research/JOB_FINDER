@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Landing from './pages/Landing';
 import Home from './pages/Home';
+import ResumeEnrich from './pages/ResumeEnrich';
 
 function App() {
   return (
@@ -52,6 +53,9 @@ function App() {
                 } />
                 <Route path="/build-resume" element={
                   <ProtectedRoute><ResumeBuilder /></ProtectedRoute>
+                } />
+                <Route path="/optimize-resume" element={
+                  <ProtectedRoute><ResumeEnrich /></ProtectedRoute>
                 } />
                 <Route path="/home" element={
                   <ProtectedRoute><Home /></ProtectedRoute>
