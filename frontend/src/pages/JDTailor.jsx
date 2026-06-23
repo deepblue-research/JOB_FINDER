@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import enrichmentClient from '../api/enrichmentClient';
 
 // ─── Step constants ───────────────────────────────────────────────────────────
@@ -9,11 +9,14 @@ const STEP_FOLLOWUP= 'followup';  // answer follow-up questions
 const STEP_ENHANCE = 'enhance';   // waiting for Round 2
 const STEP_DONE    = 'done';      // final resume ready
 
-export default function ResumeEnrich() {
+export default function JDTailor() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const passedJD = location.state?.jobDescription || '';
+  const passedRawText = location.state?.rawText || '';
 
   const [step, setStep]                   = useState(STEP_JD);
-  const [jobDescription, setJobDescription] = useState('');
+  const [jobDescription, setJobDescription] = useState(passedJD);
   const [sessionId, setSessionId]         = useState(null);
   const [loadingMsg, setLoadingMsg]       = useState('');
   const [error, setError]                 = useState(null);
@@ -28,6 +31,15 @@ export default function ResumeEnrich() {
   const [changesSummary, setChangesSummary] = useState([]);
   const [downloadUrl, setDownloadUrl]     = useState(null);
   const [draftUrl, setDraftUrl]           = useState(null);
+
+  // ── Auto-start if a job description was passed in ──────────────────────────
+
+  React.useEffect(() => {
+    if (passedJD.trim()) {
+      handleOptimize();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -51,8 +63,16 @@ export default function ResumeEnrich() {
       const sid = sessionRes.data.session_id;
       setSessionId(sid);
 
-      setLoadingMsg('Tailoring your resume to the job description…');
+      // 2. Seed session with uploaded resume if available
+      if (passedRawText.trim()) {
+        setLoadingMsg('Loading your resume…');
+        await enrichmentClient.post('/sessions/seed', {
+          session_id: sid,
+          raw_text: passedRawText,
+        });
+      }
 
+      setLoadingMsg('Tailoring your resume to the job description…');
       // 2. Round 1 — rewrite + follow-up questions
       const optimizeRes = await enrichmentClient.post('/optimize/', {
         session_id: sid,
@@ -264,7 +284,7 @@ export default function ResumeEnrich() {
                     padding: '5px 12px', borderRadius: 99, fontSize: 13,
                     background: 'rgba(220,38,38,0.08)', color: '#b91c1c',
                     border: '1px solid rgba(220,38,38,0.2)', fontWeight: 500,
-                  }}>{gap}</span>
+                  }}>{typeof gap === 'object' ? (gap.skill || JSON.stringify(gap)) : gap}</span>
                 ))}
               </div>
             </div>
@@ -292,7 +312,7 @@ export default function ResumeEnrich() {
             {followupQs.map((q, i) => (
               <div key={i}>
                 <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 600, fontSize: 14.5, color: '#1e293b', marginBottom: 8 }}>
-                  {i + 1}. {q}
+                  {i + 1}. {typeof q === 'object' ? (q.question_text || q.question || JSON.stringify(q)) : q}
                 </div>
                 <textarea
                   value={answers[i] || ''}

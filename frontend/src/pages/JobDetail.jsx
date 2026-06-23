@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import useJobStore from '../store/jobStore';
 import { useToastStore } from '../store/toastStore';
@@ -20,6 +20,7 @@ const getMatchColor = (score) => {
 
 const JobDetail = () => {
   const params = useParams();
+  const navigate = useNavigate();
   const jobHash = params.job_hash || params.job_id;
 
   const skillGaps = useJobStore((state) => state.skillGaps);
@@ -269,6 +270,38 @@ const JobDetail = () => {
             }}
           >
             Skill Gap
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const token = localStorage.getItem('jm_token');
+                const resumeRes = await fetch('http://localhost:8000/api/resumes/', {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                const resumeData = await resumeRes.json();
+                navigate('/jd-tailor', {
+                  state: {
+                    jobDescription: job?.job_description || job?.description || '',
+                    rawText: resumeData.raw_text || ''
+                  }
+                });
+              } catch (e) {
+                navigate('/jd-tailor', {
+                  state: {
+                    jobDescription: job?.job_description || job?.description || '',
+                    rawText: ''
+                  }
+                });
+              }
+            }}
+            style={{
+              padding: '15px 24px', borderRadius: 12,
+              background: 'transparent', border: '1.5px solid #059669',
+              color: '#059669', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Tweak resume to match JD
           </button>
         </div>
 

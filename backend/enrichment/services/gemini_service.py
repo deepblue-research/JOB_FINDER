@@ -4,7 +4,7 @@ import json
 
 def get_model():
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    return genai.GenerativeModel("gemini-2.5-flash-lite")
+    return genai.GenerativeModel("gemini-2.0-flash-lite")
 
 def generate_resume(answers: dict) -> dict:
     model = get_model()
@@ -46,17 +46,22 @@ Return ONLY valid JSON. No explanation, no extra text, no markdown formatting.
     return json.loads(text)
 
 
-async def generate_l2_questions(weak_areas: list, tips: list) -> list:
+async def generate_l2_questions(weak_areas: list, tips: list, resume_text: str = "") -> list:
     model = get_model()
     
     prompt = f"""
 You are a resume coach for engineering students in India.
+
+Here is the candidate's current resume:
+{resume_text}
 
 This resume scored poorly in these areas:
 Weak areas: {json.dumps(weak_areas)}
 Specific tips: {json.dumps(tips)}
 
 Generate 5-8 specific follow-up questions to collect missing information that will fix these weak spots.
+Questions MUST be based on what is actually in this resume — refer to the candidate's real projects,
+skills, and experience. Do not invent projects or experiences that are not in the resume.
 
 Each question must have:
 - id (e.g. "l2_q1")

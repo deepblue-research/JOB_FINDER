@@ -277,6 +277,27 @@ const ResumeUpload = () => {
               View Job Matches →
             </button>
             <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('jm_token');
+                  const resumeRes = await fetch('http://localhost:8000/api/resumes/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  const resumeData = await resumeRes.json();
+                  navigate('/ats-booster', { state: { rawText: resumeData.raw_text || '' } });
+                } catch (e) {
+                  navigate('/ats-booster', { state: { rawText: '' } });
+                }
+              }}
+              style={{
+                padding: '14px 24px', borderRadius: 12,
+                background: 'transparent', border: '1.5px solid #d97706',
+                color: '#d97706', fontFamily: "'Hanken Grotesk'", fontWeight: 600, fontSize: 15, cursor: 'pointer',
+              }}
+            >
+              Improve ATS Score
+            </button>
+            <button
               onClick={() => setReplacing(true)}
               style={{
                 padding: '14px 24px', borderRadius: 12,
