@@ -19,14 +19,22 @@ async def improve(request: ImproveRequest):
         # Step 1 — get the original answers from the database
         conn = await asyncpg.connect(os.getenv("ENRICHMENT_DATABASE_URL"))
         row = await conn.fetchrow(
-            "SELECT answers FROM enrichment_sessions WHERE session_id = $1",
+            "SELECT answers, resume_text FROM enrichment_sessions WHERE session_id = $1",
             request.session_id
         )
 
-        if not row or not row["answers"]:
-            raise HTTPException(status_code=404, detail="Original answers not found for this session")
+        if not row:
+            raise HTTPException(status_code=404, detail="Session not found")
 
-        original_answers = json.loads(row["answers"])
+        if row["answers"]:
+            original_answers = json.loads(row["answers"])
+            source = "answers"
+        else:
+            resume_text = row["resume_text"]
+            if not resume_text:
+                raise HTTPException(status_code=404, detail="No resume data found for this session")
+            original_answers = {"resume_text": resume_text}
+            source = "resume_text"
 
         # Step 2 — call Gemini with original + new answers
         improved_resume_json = improve_resume(original_answers, request.l2_answers)

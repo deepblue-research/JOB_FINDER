@@ -38,8 +38,9 @@ async def seed_session(request: SeedRequest):
         # Update the enrichment session with this resume path
         conn = await asyncpg.connect(os.getenv("ENRICHMENT_DATABASE_URL"))
         await conn.execute(
-            "UPDATE enrichment_sessions SET resume_path = $1 WHERE session_id = $2",
+            "UPDATE enrichment_sessions SET resume_path = $1, resume_text = $2 WHERE session_id = $3",
             output_path,
+            request.raw_text,
             request.session_id
         )
         await conn.close()

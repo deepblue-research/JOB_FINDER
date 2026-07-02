@@ -85,12 +85,23 @@ Return ONLY valid JSON as a list of questions. No explanation, no extra text.
 
 def improve_resume(original_answers: dict, l2_answers: dict) -> dict:
     model = get_model()
-    
+
+    # Handle both L1 form answers and seeded resume text
+    if "resume_text" in original_answers and len(original_answers) == 1:
+        original_context = f"""
+Here is the candidate's current resume (uploaded as text):
+{original_answers["resume_text"]}
+"""
+    else:
+        original_context = f"""
+Here are the candidate's original answers to a resume questionnaire:
+{json.dumps(original_answers, indent=2)}
+"""
+
     prompt = f"""
 You are a resume writer for engineering students in India.
 
-Here are the candidate's original answers:
-{json.dumps(original_answers, indent=2)}
+{original_context}
 
 Here are additional answers they provided to improve their resume:
 {json.dumps(l2_answers, indent=2)}
