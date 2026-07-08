@@ -93,6 +93,7 @@ jobs:
             ALLOWED_ORIGINS=http://${{ secrets.VM_HOST }}
             VITE_API_URL=http://${{ secrets.VM_HOST }}
             SQL_ECHO=false
+            ENRICHMENT_DATABASE_URL=${{ secrets.ENRICHMENT_DATABASE_URL }}
             EOF
 
             echo "=== Step 3: Rebuild and restart containers ==="
