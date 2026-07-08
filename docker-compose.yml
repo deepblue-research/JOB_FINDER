@@ -42,7 +42,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./backend/enrichment/.env
+      - .env
     volumes:
       - ./backend/enrichment:/app
       - ./backend/enrichment/outputs:/app/outputs
