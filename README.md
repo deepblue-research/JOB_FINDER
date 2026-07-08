@@ -30,7 +30,7 @@ JobMatch is an AI-powered job recommendation platform built for fresh graduates.
 | Container | Docker, Docker Compose |
 
 ---
-
+.
 ## How It Works
 
 ```
