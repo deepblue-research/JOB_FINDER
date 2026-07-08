@@ -35,6 +35,18 @@ services:
     volumes:
       - ./backend:/app
 
+  enrichment:
+    build:
+      context: ./backend/enrichment
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/enrichment/.env
+    volumes:
+      - ./backend/enrichment:/app
+      - ./backend/enrichment/outputs:/app/outputs
+
   frontend:
     build: ./frontend
     restart: always
@@ -45,8 +57,6 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:
