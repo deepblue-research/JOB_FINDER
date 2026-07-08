@@ -2,9 +2,23 @@ import google.generativeai as genai
 import os
 import json
 
+def extract_json(text: str) -> str:
+    """Reliably strip markdown code fences from Gemini output."""
+    text = text.strip()
+    # If wrapped in code fences, extract just the content between them
+    if "```" in text:
+        parts = text.split("```")
+        # parts[1] is the content between first and second fence
+        if len(parts) >= 2:
+            text = parts[1]
+            # Remove language tag like "json" at the start
+            if text.startswith("json"):
+                text = text[4:]
+    return text.strip()
+
 def get_model():
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    return genai.GenerativeModel("gemini-2.0-flash-lite")
+    return genai.GenerativeModel("gemini-2.5-flash-lite")
 
 def generate_resume(answers: dict) -> dict:
     model = get_model()
@@ -36,12 +50,8 @@ Return ONLY valid JSON. No explanation, no extra text, no markdown formatting.
 """
     
     response = model.generate_content(prompt)
-    text = response.text.strip()
     
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+    text = extract_json(response.text)
     
     return json.loads(text)
 
@@ -73,12 +83,9 @@ Return ONLY valid JSON as a list of questions. No explanation, no extra text.
 """
     
     response = model.generate_content(prompt)
-    text = response.text.strip()
     
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+    
+    text = extract_json(response.text)
     
     return json.loads(text)
 
@@ -128,12 +135,8 @@ Return ONLY valid JSON. No explanation, no extra text, no markdown formatting.
 """
     
     response = model.generate_content(prompt)
-    text = response.text.strip()
     
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+    text = extract_json(response.text)
     
     parsed = json.loads(text)
     print("DEBUG IMPROVE OUTPUT:", parsed)
@@ -197,12 +200,8 @@ Return ONLY valid JSON in this exact shape, no markdown, no explanation:
 """
 
     response = model.generate_content(prompt)
-    text = response.text.strip()
 
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+    text = extract_json(response.text)
 
     parsed = json.loads(text)
     print("DEBUG L3R1 TYPE:", type(parsed))
@@ -239,11 +238,7 @@ Return ONLY valid JSON in this exact shape, no markdown, no explanation:
 """
 
     response = model.generate_content(prompt)
-    text = response.text.strip()
 
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+    text = extract_json(response.text)
 
     return json.loads(text)

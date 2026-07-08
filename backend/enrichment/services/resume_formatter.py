@@ -125,7 +125,10 @@ def format_resume(resume_json: dict, output_path: str):
         for project in projects:
             add_normal(doc, project.get("name", ""), bold=True)
             if project.get("technologies"):
-                add_normal(doc, f"Technologies: {project['technologies']}")
+                tech = project["technologies"]
+                if isinstance(tech, list):
+                    tech = ", ".join(tech)
+                add_normal(doc, f"Technologies: {tech}")
             # Gemini sometimes uses "bullets" instead of "description" — check both
             description = project.get("description") or project.get("bullets")
             if description:
@@ -231,16 +234,49 @@ def format_resume(resume_json: dict, output_path: str):
     if extra:
         add_section_heading(doc, "Extracurriculars")
         if isinstance(extra, list):
-            # Gemini sometimes returns a flat list instead of a dict — handle both
             for item in extra:
                 add_bullet(doc, str(item))
         elif isinstance(extra, dict):
-            if extra.get("clubs"):
-                add_normal(doc, extra["clubs"])
+            if extra.get("clubs") or extra.get("club"):
+                clubs = extra.get("clubs") or extra.get("club")
+                if isinstance(clubs, list):
+                    for club in clubs:
+                        if isinstance(club, dict):
+                            add_normal(doc, club.get("name", ""), bold=True)
+                            if club.get("role"):
+                                add_normal(doc, club["role"])
+                            for key in ("activities", "description"):
+                                if club.get(key):
+                                    items = club[key]
+                                    if isinstance(items, list):
+                                        for act in items:
+                                            add_bullet(doc, act)
+                                    else:
+                                        add_bullet(doc, str(items))
+                                    break
+                        else:
+                            add_bullet(doc, str(club))
+                else:
+                    add_normal(doc, str(clubs))
             if extra.get("events"):
-                add_bullet(doc, extra["events"])
+                events = extra["events"]
+                if isinstance(events, list):
+                    for event in events:
+                        if isinstance(event, dict):
+                            add_normal(doc, event.get("name", ""), bold=True)
+                            if event.get("description"):
+                                add_bullet(doc, event["description"])
+                        else:
+                            add_bullet(doc, str(event))
+                else:
+                    add_normal(doc, str(events))
             if extra.get("creative_output"):
-                add_bullet(doc, extra["creative_output"])
+                creative = extra["creative_output"]
+                if isinstance(creative, list):
+                    for item in creative:
+                        add_bullet(doc, str(item))
+                else:
+                    add_bullet(doc, str(creative))
         else:
             add_normal(doc, str(extra))
 
