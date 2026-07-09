@@ -54,6 +54,7 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_ENRICHMENT_URL=${VITE_ENRICHMENT_URL:-http://localhost:8080}
     volumes:
       - ./frontend:/app
       - /app/node_modules

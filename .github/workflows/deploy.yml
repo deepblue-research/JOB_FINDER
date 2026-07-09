@@ -94,6 +94,7 @@ jobs:
             VITE_API_URL=http://${{ secrets.VM_HOST }}
             SQL_ECHO=false
             ENRICHMENT_DATABASE_URL=${{ secrets.ENRICHMENT_DATABASE_URL }}
+            VITE_ENRICHMENT_URL=http://${{ secrets.VM_HOST }}:8080
             EOF
 
             echo "=== Step 3: Rebuild and restart containers ==="
